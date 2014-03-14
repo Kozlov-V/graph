@@ -1,0 +1,12 @@
+{application, graph,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { graph_app, []}},
+  {env, []}
+ ]}.
