@@ -1,3 +1,6 @@
+clean:
+	./rebar clean
+
 compile:
 	./rebar compile
 
