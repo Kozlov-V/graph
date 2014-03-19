@@ -90,7 +90,7 @@ graph4() ->
         draw_rectangle(Gd, Width, Height, Color(background), Color(graphborder)),
         draw_header(Gd, D(fontpath), D(header), Color(text), Width),
         draw_work_period(Gd, D(shiftXleft) + 1, D(shiftY), D(sizeX) + D(shiftXleft) - 1, D(sizeY) + D(shiftY), Color(graph)),
-        draw_time_grid(Gd, D, D(gridPixels), 18537491, 1296, 1376689633, Color(highlight), Color(maingrid), Color(grid))
+        draw_time_grid(Gd, D, D(gridPixels), 18537491, 1296, 1376689633, Color(highlight), Color(maingrid), Color(grid), Color(text))
     end,
     graph(Fun, "/tmp/d.png").
 
@@ -161,7 +161,7 @@ draw_header({Gd, Index}, FontPath, Text, TextColor, Width) ->
     gd:image_string_ft(Gd, Index, TextColor, Font, 0, Xheader, Yheader, Text).
 
 -record(tg, {interval, intervalX, offset, offsetX, start, vline}).
-draw_time_grid({Gd, Index}, D, GridPixels, Period, SizeX, From, HighlightColor, MainGridColor, GridColor) ->
+draw_time_grid({Gd, Index}, D, GridPixels, Period, SizeX, From, HighlightColor, MainGridColor, GridColor, TextColor) ->
     % io:format("From: ~p~n", [From]),
     FontPath = D(fontpath),
     Intervals = [
@@ -205,25 +205,41 @@ draw_time_grid({Gd, Index}, D, GridPixels, Period, SizeX, From, HighlightColor, 
     % io:format("sub: ~p~n", [SubTimeGrid]),
     % io:format("main: ~p~n", [MainTimeGrid]),
     
+    {ok, WidthTest, _} = text_size({Gd, Index}, gd_font:factory(FontPath, 7), "WWW", 3.14/2),
+    Test = WidthTest * (floor(MainTimeGrid#tg.interval / SubTimeGrid#tg.interval) + 1),
     F = fun(N) ->
         T = From + N * SubTimeGrid#tg.interval + SubTimeGrid#tg.offset,
         NewPos = N * SubTimeGrid#tg.intervalX + SubTimeGrid#tg.offsetX,
         New = T + timezone(unixtime_to_erlangtime(From)) - timezone(unixtime_to_erlangtime(T)),   % daylight saving
-        NewTime = {NewDate, {H, M, _}} = calendar:now_to_local_time(unixtime_to_erlangtime(New)),
-        DayOfWeek = calendar:day_of_the_week(NewDate),
+        NewTime = {{Year, Month, Day}, {Hour, Min, _}} = calendar:now_to_local_time(unixtime_to_erlangtime(New)),
+        DayOfWeek = calendar:day_of_the_week({Year, Month, Day}),
 
         if
-            SubTimeGrid#tg.interval < ?SEC_PER_HOUR andalso M == 0 ->
+            SubTimeGrid#tg.interval < ?SEC_PER_HOUR andalso Min == 0 ->
                 draw_main_period({Gd, Index}, FontPath, NewTime, NewPos, D(shiftXleft), D(sizeY), D(shiftY), HighlightColor, MainGridColor);
-            SubTimeGrid#tg.interval >= ?SEC_PER_HOUR andalso SubTimeGrid#tg.interval < ?SEC_PER_DAY andalso H == 0 ->
+            SubTimeGrid#tg.interval >= ?SEC_PER_HOUR andalso SubTimeGrid#tg.interval < ?SEC_PER_DAY andalso Hour == 0 ->
                 draw_main_period({Gd, Index}, FontPath, NewTime, NewPos, D(shiftXleft), D(sizeY), D(shiftY), HighlightColor, MainGridColor);
             SubTimeGrid#tg.interval == ?SEC_PER_DAY andalso DayOfWeek == 1 -> 
                 draw_main_period({Gd, Index}, FontPath, NewTime, NewPos, D(shiftXleft), D(sizeY), D(shiftY), HighlightColor, MainGridColor);
             SubTimeGrid#tg.interval > ?SEC_PER_DAY andalso 
             ((N * SubTimeGrid#tg.interval) rem MainTimeGrid#tg.interval) + SubTimeGrid#tg.offset == MainTimeGrid#tg.offset ->
                 draw_main_period({Gd, Index}, FontPath, NewTime, NewPos, D(shiftXleft), D(sizeY), D(shiftY), HighlightColor, MainGridColor);
+            MainTimeGrid#tg.intervalX < Test ->
+                image_dashed_line(Gd, Index, D(shiftXleft) + NewPos, D(shiftY), D(shiftXleft) + NewPos, D(sizeY) + D(shiftY), GridColor);
             true ->
-                image_dashed_line(Gd, Index, D(shiftXleft) + NewPos, D(shiftY), D(shiftXleft) + NewPos, D(sizeY) + D(shiftY), GridColor)
+                image_dashed_line(Gd, Index, D(shiftXleft) + NewPos, D(shiftY), D(shiftXleft) + NewPos, D(sizeY) + D(shiftY), GridColor),
+                DateArgs = if
+                    SubTimeGrid#tg.interval == ?SEC_PER_DAY ->
+                        ["~2..0B", [Day]];
+                    SubTimeGrid#tg.interval > ?SEC_PER_DAY ->
+                        ["~2..0B.~2..0B", [Day, Month]];
+                    SubTimeGrid#tg.interval < ?SEC_PER_DAY ->
+                        ["~2..0B:~2..0B", [Hour, Min]]
+                end,
+                Date = lists:flatten(apply(io_lib, format, DateArgs)),
+                Font = gd_font:factory(FontPath, 7),
+                {ok, W, H} = text_size({Gd, Index}, Font, Date, 3.14/2),
+                gd:image_string_ft(Gd, Index, TextColor, Font, 3.14/2, trunc(D(shiftXleft) + NewPos + W/2), trunc(D(sizeY) + D(shiftY) + H + 6), Date)
         end
     end,
     
@@ -280,3 +296,11 @@ text_size({GD, Index}, Font, String, Angle) ->
 image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
     gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
     gd:image_line(Gd, Index, trunc(X1), trunc(Y1), trunc(X2), trunc(Y2), ?GD_STYLED).
+
+floor(X) ->
+    T = erlang:trunc(X),
+    case (X - T) of
+        Neg when Neg < 0 -> T - 1;
+        Pos when Pos > 0 -> T;
+        _ -> T
+    end.
