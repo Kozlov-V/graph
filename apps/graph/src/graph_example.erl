@@ -243,7 +243,20 @@ draw_time_grid({Gd, Index}, D, GridPixels, Period, SizeX, From, HighlightColor, 
         end
     end,
     
-    [ F(N) || N <- lists:seq(SubTimeGrid#tg.start, SubTimeGrid#tg.vline) ].
+    [ F(N) || N <- lists:seq(SubTimeGrid#tg.start, SubTimeGrid#tg.vline) ],
+    
+    % first and last
+    Start = calendar:now_to_local_time(unixtime_to_erlangtime(From)),
+    End = calendar:now_to_local_time(unixtime_to_erlangtime(From + Period)),
+    
+    F2 = fun({{_Year, Month, Day}, {Hour, Min, _Sec}}, X, Y) ->
+        Date = lists:flatten(io_lib:format("~2..0B.~2..0B ~2..0B:~2..0B", [Day, Month, Hour, Min])),
+        Font = gd_font:factory(FontPath, 8),
+        {ok, W, H} = text_size({Gd, Index}, Font, Date, 3.14/2),
+        gd:image_string_ft(Gd, Index, HighlightColor, Font, 3.14/2, trunc(X + W/2), trunc(Y + H), Date)
+    end,
+    F2(Start, D(shiftXleft), D(sizeY) + D(shiftY) + 6),
+    F2(End, D(sizeX) + D(shiftXleft), D(sizeY) + D(shiftY) + 6).
 
 unixtime_to_erlangtime(Time) -> 
     {Time div ?MIL, Time rem ?MIL, 0}.
