@@ -90,7 +90,7 @@ graph4() ->
         draw_rectangle(Gd, Width, Height, Color(background), Color(graphborder)),
         draw_header(Gd, D(fontpath), D(header), Color(text), Width),
         draw_work_period(Gd, D(shiftXleft) + 1, D(shiftY), D(sizeX) + D(shiftXleft) - 1, D(sizeY) + D(shiftY), Color(graph)),
-        draw_time_grid(Gd, D, D(gridPixels), 18537491, 1296, 1376689633, Color(highlight), Color(maingrid))
+        draw_time_grid(Gd, D, D(gridPixels), 18537491, 1296, 1376689633, Color(highlight), Color(maingrid), Color(grid))
     end,
     graph(Fun, "/tmp/d.png").
 
@@ -112,7 +112,7 @@ graph(Fun, FilePath) ->
 
 default() ->
     L = [
-        {sizeX, 900},
+        {sizeX, 1296},
         {shiftXleft, 85},
         {shiftXright, 30},
         {sizeY, 200},
@@ -138,7 +138,8 @@ palette({Gd, Index}) ->
         {text, {16#20, 16#20, 16#20}},
         {graph, {16#FF, 16#FF, 16#FF}},
         {highlight, {16#AA, 16#44, 16#44}},
-        {maingrid, {16#AA, 16#AA, 16#AA}}
+        {maingrid, {16#AA, 16#AA, 16#AA}},
+        {grid, {16#CC, 16#CC, 16#CC}}
     ],
     L = [ begin {ok, C} = gd:image_color_allocate(Gd, Index, R, G, B), {T, C} end || {T, {R, G, B}} <- Colors],
     fun(C) -> proplists:get_value(C, L) end.
@@ -160,7 +161,7 @@ draw_header({Gd, Index}, FontPath, Text, TextColor, Width) ->
     gd:image_string_ft(Gd, Index, TextColor, Font, 0, Xheader, Yheader, Text).
 
 -record(tg, {interval, intervalX, offset, offsetX, start, vline}).
-draw_time_grid({Gd, Index}, D, GridPixels, Period, SizeX, From, HighlightColor, MainGridColor) ->
+draw_time_grid({Gd, Index}, D, GridPixels, Period, SizeX, From, HighlightColor, MainGridColor, GridColor) ->
     % io:format("From: ~p~n", [From]),
     FontPath = D(fontpath),
     Intervals = [
@@ -222,7 +223,7 @@ draw_time_grid({Gd, Index}, D, GridPixels, Period, SizeX, From, HighlightColor, 
             ((N * SubTimeGrid#tg.interval) rem MainTimeGrid#tg.interval) + SubTimeGrid#tg.offset == MainTimeGrid#tg.offset ->
                 draw_main_period({Gd, Index}, FontPath, NewTime, NewPos, D(shiftXleft), D(sizeY), D(shiftY), HighlightColor, MainGridColor);
             true ->
-                true
+                image_dashed_line(Gd, Index, D(shiftXleft) + NewPos, D(shiftY), D(shiftXleft) + NewPos, D(sizeY) + D(shiftY), GridColor)
         end
     end,
     
@@ -268,7 +269,7 @@ draw_main_period({Gd, Index}, FontPath, {{_Year, Month, Day}, {Hour, Min, _Sec}}
     % io:format("x = '~p'; y = '~p'; pos = '~p'; date = '~s'~n", [trunc(OffsetX + Pos + W / 2), trunc(OffsetY + W + 6), Pos, Date]),
     % io:format("OffsetY = '~p'; height = '~p';~n", [OffsetY, H]),
     gd:image_string_ft(Gd, Index, HighlightColor, Font, 3.14/2, trunc(OffsetX + Pos + W / 2), trunc(OffsetY + H + 6), Date),
-    image_dashed_line(Gd, Index, trunc(ShiftXleft + Pos), trunc(ShiftY), trunc(ShiftXleft + Pos), trunc(SizeY + ShiftY), MainGridColor).
+    image_dashed_line(Gd, Index, ShiftXleft + Pos, ShiftY, ShiftXleft + Pos, SizeY + ShiftY, MainGridColor).
 
 text_size({GD, Index}, Font, String, Angle) ->
     { ok, Bounds } = gd:image_string_ft (GD, Index, 0, Font, Angle, 0, 0, String),
@@ -278,4 +279,4 @@ text_size({GD, Index}, Font, String, Angle) ->
 
 image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
     gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
-    gd:image_line(Gd, Index, X1, Y1, X2, Y2, ?GD_STYLED).
+    gd:image_line(Gd, Index, trunc(X1), trunc(Y1), trunc(X2), trunc(Y2), ?GD_STYLED).
