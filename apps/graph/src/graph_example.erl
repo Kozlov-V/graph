@@ -1,5 +1,5 @@
 -module(graph_example).
--export([graph1/0, graph2/0, graph3/0, graph4/0]).
+-export([graph1/0, graph2/0, graph3/0, graph4/0, graph5/0, groupBy/2, avgY/1, tsv/1, bin_to_num/1]).
 -define(SEC_PER_DAY, 86400).
 -define(SEC_PER_HOUR, 3600).
 -define(MIL, 1000000).
@@ -94,6 +94,28 @@ graph4() ->
     end,
     graph(Fun, "/tmp/d.png").
 
+graph5() ->
+    Fun = fun(Gd, D) ->
+        Width = get_width(D),
+        Height = get_height(D),
+
+        Color = palette(Gd),
+        draw_rectangle(Gd, Width, Height, Color(background), Color(graphborder)),
+        draw_header(Gd, D(fontpath), D(header), Color(text), Width),
+        draw_work_period(Gd, D(shiftXleft) + 1, D(shiftY), D(sizeX) + D(shiftXleft) - 1, D(sizeY) + D(shiftY), Color(graph)),
+        From = 1376766933,
+        P = 18537491,
+        W = 1296,
+        draw_time_grid(Gd, D, D(gridPixels), P, W, From, Color(highlight), Color(maingrid), Color(grid), Color(text)),
+        {ok, Bin} = file:read_file("apps/graph/src/data"),
+        Data = [ lists:map(fun bin_to_num/1, X) || X <- tsv(Bin) ],
+        Z = P - From rem P,
+        DG = groupBy(fun([X,_Y]) -> round((W * ((X + Z) rem P)) / P) end, Data),
+        M = [{N, avgY(L)} || {N, L} <- DG ],    % { pixel_x, value}
+        ok
+    end,
+    graph(Fun, "/tmp/e.png").
+
 graph(Fun, FilePath) ->
     ok = erl_ddll:load_driver("deps/elib_gd/priv/", "elib_gd_drv"),
     D = default(),
@@ -120,6 +142,7 @@ default() ->
         {legendOffsetY, 80},
         {header, "mylogin : simple graph"},
         {gridPixels, 25},
+        {gridPixelsVert, 40},
         {period, 3600},
         {fontpath, "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf"}
     ],
@@ -317,3 +340,20 @@ floor(X) ->
         Pos when Pos > 0 -> T;
         _ -> T
     end.
+
+tsv(Bin) ->
+    L = binary:split(Bin, <<"\n">>, [global]),
+    [ binary:split(B, <<"\t">>, [global]) || B <- lists:filter(fun(E) -> E =/= <<"">> end, L) ].
+
+bin_to_num(B) ->
+    N = binary_to_list(B),
+    case string:to_float(N) of
+        {error,no_float} -> list_to_integer(N);
+        {F,_Rest} -> F
+    end.
+
+groupBy(F, L) ->
+    gb_trees:to_list(lists:foldr(fun({K,E}, Acc) -> X = case gb_trees:lookup(K, Acc) of none -> [E]; {value, V} -> [E|V] end, gb_trees:enter(K, X, Acc) end, gb_trees:empty(), [{F(E), E} || E <- L])).
+
+avgY(L) ->
+    lists:sum([ Y || [_X,Y] <- L ]) / length(L).
