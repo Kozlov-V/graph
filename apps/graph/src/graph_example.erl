@@ -107,14 +107,33 @@ graph5() ->
         P = 18537491,
         W = 1296,
         draw_time_grid(Gd, D, D(gridPixels), P, W, From, Color(highlight), Color(maingrid), Color(grid), Color(text)),
-        {ok, Bin} = file:read_file("apps/graph/src/data"),
-        Data = [ lists:map(fun bin_to_num/1, X) || X <- tsv(Bin) ],
-        Z = P - From rem P,
-        DG = groupBy(fun([X,_Y]) -> round((W * ((X + Z) rem P)) / P) end, Data),
-        M = [{N, avgY(L)} || {N, L} <- DG ],    % { pixel_x, value}
+        Data = get_data(),
+        M = map_data(From, P, W, Data),
+        draw_horizontal_grid(Gd, D, M, Color(maingrid)),
         ok
     end,
     graph(Fun, "/tmp/e.png").
+
+draw_horizontal_grid({Gd, Index}, D, M, Color) ->
+    Min = lists:min([ E || {_, E} <- M ]),
+    Max = lists:max([ E || {_, E} <- M ]),
+    ColumnInterval = D(gridPixelsVert) * (Max - Min) / D(sizeY),
+    Intervals = intervals(),
+    [Interval|_] = lists:usort(fun(A,B) -> abs(ColumnInterval - A) < abs(ColumnInterval - B) end, Intervals),
+    MinC = Interval * floor(Min / Interval),
+    MaxC = Interval * ceiling(Max / Interval),
+    StepY = 0.5 * Interval * D(sizeY) / (MaxC - MinC),
+    [ begin Y = D(shiftY) + D(sizeY) - N*StepY, image_dashed_line(Gd, Index, D(shiftXleft), Y, D(shiftXleft) + D(sizeX), Y, Color) end || N <- lists:seq(1, trunc(D(sizeY)/StepY)) ].
+
+
+get_data() ->
+    {ok, Bin} = file:read_file("apps/graph/src/data"),
+    [ lists:map(fun bin_to_num/1, X) || X <- tsv(Bin) ].
+
+map_data(From, Period, Width, Data) ->
+    Z = Period - From rem Period,
+    D = groupBy(fun([X,_Y]) -> round((Width * ((X + Z) rem Period)) / Period) end, Data),
+    [{N, avgY(L)} || {N, L} <- D].
 
 graph(Fun, FilePath) ->
     ok = erl_ddll:load_driver("deps/elib_gd/priv/", "elib_gd_drv"),
@@ -341,6 +360,14 @@ floor(X) ->
         _ -> T
     end.
 
+ceiling(X) ->
+    T = erlang:trunc(X),
+    case (X - T) of
+        Neg when Neg < 0 -> T;
+        Pos when Pos > 0 -> T + 1;
+        _ -> T
+    end.
+
 tsv(Bin) ->
     L = binary:split(Bin, <<"\n">>, [global]),
     [ binary:split(B, <<"\t">>, [global]) || B <- lists:filter(fun(E) -> E =/= <<"">> end, L) ].
@@ -357,3 +384,6 @@ groupBy(F, L) ->
 
 avgY(L) ->
     lists:sum([ Y || [_X,Y] <- L ]) / length(L).
+
+intervals() ->
+    [ math:pow(10, P) * M || P <- lists:seq(-4,18), M <- [1,2,5] ].
