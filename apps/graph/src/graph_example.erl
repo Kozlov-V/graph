@@ -128,14 +128,28 @@ graph6() ->
         draw_time_grid(Gd, D, D(gridPixels), P, W, From, Color(highlight), Color(maingrid), Color(grid), Color(text)),
         Data = get_data(),
         M = map_data(From, P, W, Data),
-        {MinC, MaxC} = draw_horizontal_grid(Gd, D, M, Color(maingrid)),
+        {MinC, MaxC, Interval} = draw_horizontal_grid(Gd, D, M, Color(maingrid)),
         draw_y_axis(Gd, D(shiftXleft) - 1, D(shiftY) - 5, D(shiftY) + D(sizeY) + 4, Color(gridborder)),
         draw_x_axis(Gd, D(shiftXleft) - 4, D(shiftXleft) + D(sizeX) + 5, D(sizeY) + D(shiftY) + 1, Color(gridborder)),
          
         draw_graph(Gd, D, MinC, MaxC, M, Color(gridborder)),
+        draw_sides(Gd, D, Color(gridborder), MinC, MaxC, Interval),
+        
         ok
     end,
     graph(Fun, "/tmp/f.png").
+
+draw_sides({Gd, Index}, D, Color, MinY, MaxY, Interval) ->
+    [ begin
+        S = integer_to_list(V),
+        N = trunc((V - MinY) / Interval),
+        StepY = D(sizeY) * Interval / (MaxY - MinY),
+        Font = gd_font:factory(D(fontpath), 8),
+        {ok, Wd, _} = gd:text_size(Gd, Font, S),
+        X = D(shiftXleft) - Wd - 9,
+        Y = D(sizeY) + D(shiftY) - N * StepY + 4,
+        gd:image_string_ft(Gd, Index, Color, Font, 0, trunc(X), trunc(Y), S)
+    end || V <- lists:seq(trunc(MinY), trunc(MaxY), trunc(Interval)) ].
 
 draw_graph({Gd, Index}, D, MinY, MaxY, Data, Color) ->
     U2P = case (MaxY - MinY) / D(sizeY) of 0 -> 1; V -> V end,
@@ -169,7 +183,7 @@ draw_horizontal_grid({Gd, Index}, D, M, Color) ->
     MaxC = Interval * ceiling(Max / Interval),
     StepY = 0.5 * Interval * D(sizeY) / (MaxC - MinC),
     [ begin Y = D(shiftY) + D(sizeY) - N*StepY, image_dashed_line(Gd, Index, D(shiftXleft), Y, D(shiftXleft) + D(sizeX), Y, Color) end || N <- lists:seq(1, trunc(D(sizeY)/StepY)) ],
-    {MinC, MaxC}.
+    {MinC, MaxC, Interval}.
 
 
 get_data() ->
