@@ -1,5 +1,5 @@
 -module(graph_example).
--export([graph1/0, graph2/0, graph3/0, graph4/0, graph5/0, groupBy/2, avgY/1, tsv/1, bin_to_num/1]).
+-export([graph1/0, graph2/0, graph3/0, graph4/0, graph5/0, graph6/0]).
 -define(SEC_PER_DAY, 86400).
 -define(SEC_PER_HOUR, 3600).
 -define(MIL, 1000000).
@@ -114,6 +114,34 @@ graph5() ->
     end,
     graph(Fun, "/tmp/e.png").
 
+
+graph6() ->
+    Fun = fun(Gd, D) ->
+        Width = get_width(D),
+        Height = get_height(D),
+        {From, P, W} = {1376766933, 18537491, 1296},
+
+        Color = palette(Gd),
+        draw_rectangle(Gd, Width, Height, Color(background), Color(graphborder)),
+        draw_header(Gd, D(fontpath), D(header), Color(text), Width),
+        draw_work_period(Gd, D(shiftXleft) + 1, D(shiftY), D(sizeX) + D(shiftXleft) - 1, D(sizeY) + D(shiftY), Color(graph)),
+        draw_time_grid(Gd, D, D(gridPixels), P, W, From, Color(highlight), Color(maingrid), Color(grid), Color(text)),
+        Data = get_data(),
+        M = map_data(From, P, W, Data),
+        draw_horizontal_grid(Gd, D, M, Color(maingrid)),
+        draw_y_axis(Gd, D(shiftXleft) - 1, D(shiftY) - 5, D(shiftY) + D(sizeY) + 4, Color(gridborder)),
+        ok
+    end,
+    graph(Fun, "/tmp/f.png").
+
+draw_y_axis({Gd, Index}, X, Ytop, Ybottom, Color) ->
+    gd:image_line(Gd, Index, X, Ytop, X, Ybottom, Color),
+    gd:image_filled_polygon(Gd, Index, [{trunc(X-3), trunc(Ytop)}, {trunc(X+3), trunc(Ytop)}, {trunc(X), trunc(Ytop-5)}], Color),
+    gd:image_line(Gd, Index, X-3, Ytop, X+3, Ytop, Color),
+    gd:image_line(Gd, Index, X-3, Ytop, X, Ytop-5, Color),
+    gd:image_line(Gd, Index, X+3, Ytop, X, Ytop-5, Color),
+    ok.
+
 draw_horizontal_grid({Gd, Index}, D, M, Color) ->
     Min = lists:min([ E || {_, E} <- M ]),
     Max = lists:max([ E || {_, E} <- M ]),
@@ -181,7 +209,8 @@ palette({Gd, Index}) ->
         {graph, {16#FF, 16#FF, 16#FF}},
         {highlight, {16#AA, 16#44, 16#44}},
         {maingrid, {16#AA, 16#AA, 16#AA}},
-        {grid, {16#CC, 16#CC, 16#CC}}
+        {grid, {16#CC, 16#CC, 16#CC}},
+        {gridborder, {16#00, 16#00, 16#00}}
     ],
     L = [ begin {ok, C} = gd:image_color_allocate(Gd, Index, R, G, B), {T, C} end || {T, {R, G, B}} <- Colors],
     fun(C) -> proplists:get_value(C, L) end.
@@ -247,7 +276,7 @@ draw_time_grid({Gd, Index}, D, GridPixels, Period, SizeX, From, HighlightColor, 
     % io:format("sub: ~p~n", [SubTimeGrid]),
     % io:format("main: ~p~n", [MainTimeGrid]),
     
-    {ok, WidthTest, _} = text_size({Gd, Index}, gd_font:factory(FontPath, 7), "WWW", 3.14/2),
+    {ok, WidthTest, _} = gd:text_size(Gd, gd_font:factory(FontPath, 7), "WWW", 3.14/2),
     Test = WidthTest * (floor(MainTimeGrid#tg.interval / SubTimeGrid#tg.interval) + 1),
     F = fun(N) ->
         T = From + N * SubTimeGrid#tg.interval + SubTimeGrid#tg.offset,
@@ -280,7 +309,7 @@ draw_time_grid({Gd, Index}, D, GridPixels, Period, SizeX, From, HighlightColor, 
                 end,
                 Date = lists:flatten(apply(io_lib, format, DateArgs)),
                 Font = gd_font:factory(FontPath, 7),
-                {ok, W, H} = text_size({Gd, Index}, Font, Date, 3.14/2),
+                {ok, W, H} = gd:text_size(Gd, Font, Date, 3.14/2),
                 gd:image_string_ft(Gd, Index, TextColor, Font, 3.14/2, trunc(D(shiftXleft) + NewPos + W/2), trunc(D(sizeY) + D(shiftY) + H + 6), Date)
         end
     end,
@@ -294,7 +323,7 @@ draw_time_grid({Gd, Index}, D, GridPixels, Period, SizeX, From, HighlightColor, 
     F2 = fun({{_Year, Month, Day}, {Hour, Min, _Sec}}, X, Y) ->
         Date = lists:flatten(io_lib:format("~2..0B.~2..0B ~2..0B:~2..0B", [Day, Month, Hour, Min])),
         Font = gd_font:factory(FontPath, 8),
-        {ok, W, H} = text_size({Gd, Index}, Font, Date, 3.14/2),
+        {ok, W, H} = gd:text_size(Gd, Font, Date, 3.14/2),
         gd:image_string_ft(Gd, Index, HighlightColor, Font, 3.14/2, trunc(X + W/2), trunc(Y + H), Date)
     end,
     F2(Start, D(shiftXleft), D(sizeY) + D(shiftY) + 6),
@@ -336,17 +365,11 @@ draw_main_period({Gd, Index}, FontPath, {{_Year, Month, Day}, {Hour, Min, _Sec}}
     end,
     Date = lists:flatten(apply(io_lib, format, DateArgs)),
     Font = gd_font:factory(FontPath, 8),
-    {ok, W, H} = text_size({Gd, Index}, Font, Date, 3.14/2),
+    {ok, W, H} = gd:text_size(Gd, Font, Date, 3.14/2),
     % io:format("x = '~p'; y = '~p'; pos = '~p'; date = '~s'~n", [trunc(OffsetX + Pos + W / 2), trunc(OffsetY + W + 6), Pos, Date]),
     % io:format("OffsetY = '~p'; height = '~p';~n", [OffsetY, H]),
     gd:image_string_ft(Gd, Index, HighlightColor, Font, 3.14/2, trunc(OffsetX + Pos + W / 2), trunc(OffsetY + H + 6), Date),
     image_dashed_line(Gd, Index, ShiftXleft + Pos, ShiftY, ShiftXleft + Pos, SizeY + ShiftY, MainGridColor).
-
-text_size({GD, Index}, Font, String, Angle) ->
-    { ok, Bounds } = gd:image_string_ft (GD, Index, 0, Font, Angle, 0, 0, String),
-    Width = gd_bounds:max_x(Bounds) - gd_bounds:min_x(Bounds),
-    Height = gd_bounds:max_y(Bounds) - gd_bounds:min_y(Bounds),
-    { ok, Width, Height }.
 
 image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
     gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
