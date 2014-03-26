@@ -130,9 +130,17 @@ graph6() ->
         M = map_data(From, P, W, Data),
         draw_horizontal_grid(Gd, D, M, Color(maingrid)),
         draw_y_axis(Gd, D(shiftXleft) - 1, D(shiftY) - 5, D(shiftY) + D(sizeY) + 4, Color(gridborder)),
+        draw_x_axis(Gd, D(shiftXleft) - 4, D(shiftXleft) + D(sizeX) + 5, D(sizeY) + D(shiftY) + 1, Color(gridborder)),
         ok
     end,
     graph(Fun, "/tmp/f.png").
+
+draw_x_axis({Gd, Index}, Xleft, Xright, Y, Color) ->
+    gd:image_line(Gd, Index, Xleft, Y, Xright, Y, Color),
+    gd:image_filled_polygon(Gd, Index, [{trunc(Xright), trunc(Y-3)}, {trunc(Xright), trunc(Y+3)}, {trunc(Xright+5), trunc(Y)}], Color),
+    gd:image_line(Gd, Index, Xright, Y-3, Xright, Y+3, Color),
+    gd:image_line(Gd, Index, Xright, Y+3, Xright+5, Y, Color),
+    gd:image_line(Gd, Index, Xright+5, Y, Xright, Y-3, Color).
 
 draw_y_axis({Gd, Index}, X, Ytop, Ybottom, Color) ->
     gd:image_line(Gd, Index, X, Ytop, X, Ybottom, Color),
