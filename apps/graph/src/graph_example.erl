@@ -128,12 +128,21 @@ graph6() ->
         draw_time_grid(Gd, D, D(gridPixels), P, W, From, Color(highlight), Color(maingrid), Color(grid), Color(text)),
         Data = get_data(),
         M = map_data(From, P, W, Data),
-        draw_horizontal_grid(Gd, D, M, Color(maingrid)),
+        {MinC, MaxC} = draw_horizontal_grid(Gd, D, M, Color(maingrid)),
         draw_y_axis(Gd, D(shiftXleft) - 1, D(shiftY) - 5, D(shiftY) + D(sizeY) + 4, Color(gridborder)),
         draw_x_axis(Gd, D(shiftXleft) - 4, D(shiftXleft) + D(sizeX) + 5, D(sizeY) + D(shiftY) + 1, Color(gridborder)),
+         
+        draw_graph(Gd, D, MinC, MaxC, M, Color(gridborder)),
         ok
     end,
     graph(Fun, "/tmp/f.png").
+
+draw_graph({Gd, Index}, D, MinY, MaxY, Data, Color) ->
+    U2P = case (MaxY - MinY) / D(sizeY) of 0 -> 1; V -> V end,
+    Z = D(sizeY) + D(shiftY),
+    X = [ {D(shiftXleft) + X - 1, Z - (Y - MinY) / U2P} || {X, Y} <- Data ],
+    Points = lists:zip(lists:sublist(X, length(X)-1), tl(X)),
+    [ gd:image_line(Gd, Index, trunc(X1), trunc(Y1), trunc(X2), trunc(Y2), Color) || {{X1,Y1},{X2,Y2}} <- Points ].
 
 draw_x_axis({Gd, Index}, Xleft, Xright, Y, Color) ->
     gd:image_line(Gd, Index, Xleft, Y, Xright, Y, Color),
@@ -159,7 +168,8 @@ draw_horizontal_grid({Gd, Index}, D, M, Color) ->
     MinC = Interval * floor(Min / Interval),
     MaxC = Interval * ceiling(Max / Interval),
     StepY = 0.5 * Interval * D(sizeY) / (MaxC - MinC),
-    [ begin Y = D(shiftY) + D(sizeY) - N*StepY, image_dashed_line(Gd, Index, D(shiftXleft), Y, D(shiftXleft) + D(sizeX), Y, Color) end || N <- lists:seq(1, trunc(D(sizeY)/StepY)) ].
+    [ begin Y = D(shiftY) + D(sizeY) - N*StepY, image_dashed_line(Gd, Index, D(shiftXleft), Y, D(shiftXleft) + D(sizeX), Y, Color) end || N <- lists:seq(1, trunc(D(sizeY)/StepY)) ],
+    {MinC, MaxC}.
 
 
 get_data() ->
