@@ -223,6 +223,7 @@ default() ->
         {gridPixels, 25},
         {gridPixelsVert, 40},
         {period, 3600},
+        {legendOffsetY, 90},
         {fontpath, "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf"}
     ],
     fun(P) -> proplists:get_value(P, L) end.
