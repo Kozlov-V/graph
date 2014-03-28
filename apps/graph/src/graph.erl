@@ -83,6 +83,9 @@ convert_units(Unixtime, unixtime) ->
     {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:now_to_local_time(unixtime_to_erlangtime(Unixtime)),
     lists:flatten(io_lib:format("~4..0B.~2..0B.~2..0B ~2..0B:~2..0B:~2..0B", [Year, Month, Day, Hour, Min, Sec])).
 
+convert_units(Value, Units, bytes) ->
+    ok.
+
 %% 
 timezone(Time) ->
     LocalTime = calendar:now_to_local_time(Time),
