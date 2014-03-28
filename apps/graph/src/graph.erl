@@ -88,5 +88,8 @@ timezone(Time) ->
 unixtime_to_erlangtime(Timestamp) ->
     {Timestamp div 1000000, Timestamp rem 1000000, 0}.
 
-date2str(Format, Args) ->
+-spec date2str(Format :: string(), Args :: [pos_integer()]) -> 
+    string().
+
+date2str(Format, Args) when is_list(Format), is_list(Args) ->
     lists:flatten(io_lib:format(Format, Args)).
