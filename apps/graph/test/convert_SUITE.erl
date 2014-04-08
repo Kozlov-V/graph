@@ -31,13 +31,13 @@ unixtime(_Config) ->
     "2014.03.20 23:00:25" = graph:convert_units(1395342025, unixtime).
 
 bytes(_Config) ->
-    "0 B" = graph:convert_units(0.0, "B", bytes),
-    "0.2 TB" = graph:convert_units(219902325555.2000120, "B", bytes),
-    "0.4 TB" = graph:convert_units(439804651110.4000240, "B", bytes),
-    "0.6 TB" = graph:convert_units(659706976665.6000360, "B", bytes),
-    "0.8 TB" = graph:convert_units(879609302220.8000480, "B", bytes),
-    "1.0 TB" = graph:convert_units(1099511627776.0000600, "B", bytes),
-    "931.48 GB" = graph:convert_units(1000171708416.0000, "B", bytes),
-    "2 GB" = graph:convert_units(2147483648.0000000, "B", bytes),
-    "10 GB" = graph:convert_units(10737418240.0000000, "B", bytes),
-    "9.77 GB" = graph:convert_units(10486808576.0, "B", bytes).
+    "0 B" = graph:convert_units(0.0, 4, "B", undefined),
+    "0.2 TB" = graph:convert_units(219902325555.2000120, 4, "B", undefined),
+    "0.4 TB" = graph:convert_units(439804651110.4000240, 4, "B", undefined),
+    "0.6 TB" = graph:convert_units(659706976665.6000360, 4, "B", undefined),
+    "0.8 TB" = graph:convert_units(879609302220.8000480, 4, "B", undefined),
+    "1 TB" = graph:convert_units(1099511627776.0000600, 4, "B", undefined),
+    "931.48 GB" = graph:convert_units(1000171708416.0000, 3, "B", 2),
+    "2 GB" = graph:convert_units(2147483648.0000000, 3, "B", undefined),
+    "10 GB" = graph:convert_units(10737418240.0000000, 3, "B", undefined),
+    "9.77 GB" = graph:convert_units(10486808576.0, 3, "B", 2).

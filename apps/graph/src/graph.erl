@@ -81,10 +81,44 @@ calc_offset(FromU, Interval) ->
 
 convert_units(Unixtime, unixtime) ->
     {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:now_to_local_time(unixtime_to_erlangtime(Unixtime)),
-    lists:flatten(io_lib:format("~4..0B.~2..0B.~2..0B ~2..0B:~2..0B:~2..0B", [Year, Month, Day, Hour, Min, Sec])).
+    sprintf("~4..0B.~2..0B.~2..0B ~2..0B:~2..0B:~2..0B", [Year, Month, Day, Hour, Min, Sec]).
 
-convert_units(Value, Units, bytes) ->
-    ok.
+convert_units(Value, Pow, Units, Length) ->
+    IsBinary = lists:member(Units, ["B", "Bps"]),
+    IsBlackListed = lists:member(Units, ["%", "ms", "rpm", "RPM"]),
+    IsEmptyUnits = Units == "",
+    Step = case IsBinary of true -> 1024; false -> 1000 end,
+    V4 = round(Value, 4),
+    A4 = abs(V4),
+    if
+        IsBlackListed orelse IsEmptyUnits ->
+            V = case A4 >= 0.01 of true -> round(Value, 2); false -> Value end,
+            strip_trailing_zeros(sprintf("~.6..f", [V])) ++ " " ++ Units;
+        A4 == 0  ->
+            case is_integer(Length) of 
+                true ->
+                    sprintf("~." ++ integer_to_list(Length) ++ "..f ~s", [V4, Units]);
+                false ->
+                    sprintf("~p ~s", [0, Units])
+            end;
+        A4 < 1 ->
+            case is_integer(Length) of 
+                true -> 
+                    sprintf("~." ++ integer_to_list(Length) ++ "..f ~s", [V4, Units]);
+                false ->
+                    sprintf("~p ~s", [V4, Units])
+            end;
+        true ->
+            P = case is_integer(Pow) of true -> Pow; false -> ceiling(math:log(A4) / math:log(Step)) end,
+            V = Value / math:pow(Step, P),
+            V10 = strip_trailing_zeros(sprintf("~.10..f", [V])),
+            case is_integer(Length) of
+                true ->
+                    sprintf("~." ++ integer_to_list(Length) ++ "..f ~s~s", [V, pow_to_prefix(P), Units]);
+                false ->
+                    sprintf("~s ~s~s", [V10, pow_to_prefix(P), Units])
+            end
+    end.
 
 %% 
 timezone(Time) ->
@@ -100,3 +134,34 @@ unixtime_to_erlangtime(Timestamp) ->
 
 date2str(Format, Args) when is_list(Format), is_list(Args) ->
     lists:flatten(io_lib:format(Format, Args)).
+
+pow_to_prefix(Pow) ->
+    case Pow of
+        0 -> "";
+        1 -> "K";
+        2 -> "M";
+        3 -> "G";
+        4 -> "T";
+        5 -> "P";
+        6 -> "E";
+        7 -> "Z";
+        8 -> "Y"
+    end.
+
+sprintf(Format, Args) ->
+    lists:flatten(io_lib:format(Format, Args)).
+
+strip_trailing_zeros(String) ->
+    string:strip(string:strip(String, right, $0), right, $.).
+
+round(Value, Limit) when is_integer(Limit), Limit >= 0 ->
+    M = math:pow(10, Limit),
+    round(Value * M) / M.
+
+ceiling(X) ->
+    T = trunc(X),
+    case X - T of 
+        Neg when Neg < 0 -> T;
+        Pos when Pos > 0 -> T + 1;
+        _ -> T
+    end.
