@@ -30,7 +30,8 @@ default_theme() ->
         {grid, {16#22, 16#22, 16#22}},
         {highlight, {16#FF, 16#55, 16#00}},
         {maingrid, {16#4F, 16#4F, 16#4F}},
-        {text, {16#DF, 16#DF, 16#DF}}
+        {text, {16#DF, 16#DF, 16#DF}},
+        {white, {16#FF, 16#FF, 16#FF}}
     ].
 
 get_palette({Gd, Index}, Colors) ->
@@ -54,6 +55,8 @@ graph(Dim, Theme, From, Period) ->
     draw_header(G, Dim, Palette, Fontpath, "mylogin : simple graph"),
     draw_work_period(G, Dim, Palette),
     draw_time_grid(G, Dim, Palette, Fontpath, From, Period),
+    draw_x_axis(G, Dim, Palette),
+    draw_y_axis(G, Dim, Palette),
 
     {ok, Binary} = gd:image_png_ptr(Gd, Index),
     gd:stop(Gd),
@@ -108,6 +111,27 @@ draw_time_grid({Gd, Index}, Dim, Palette, FontPath, From, Period) ->
             X = DrawDate(Timestamp, Date, 7, Palette(text)),
             image_dashed_line(Gd, Index, X, Ytop, X, Ybot, Palette(grid))
       end || {Type, Timestamp, Date} <- List ].
+
+draw_x_axis({Gd, Index}, Dim, Palette) ->
+    Xleft = trunc(Dim(shiftXleft) - 4),
+    Xright = trunc(Dim(shiftXleft) + Dim(sizeX) + 5),
+    Y = Dim(sizeY) + Dim(shiftY) + 1,
+    gd:image_line(Gd, Index, Xleft, Y, Xright, Y, Palette(gridborder)),
+    gd:image_filled_polygon(Gd, Index, [{Xright, Y-3}, {Xright, Y+3}, {Xright+5, Y}], Palette(white)),
+    gd:image_line(Gd, Index, Xright, Y-3, Xright, Y+3, Palette(gridborder)),
+    gd:image_line(Gd, Index, Xright, Y+3, Xright+5, Y, Palette(gridborder)),
+    gd:image_line(Gd, Index, Xright+5, Y, Xright, Y-3, Palette(gridborder)).
+
+draw_y_axis({Gd, Index}, Dim, Palette) ->
+    X = trunc(Dim(shiftXleft) - 1),
+    Ytop = trunc(Dim(shiftY) - 5),
+    Ybot = trunc(Dim(shiftY) + Dim(sizeY) + 4),
+    gd:image_line(Gd, Index, X, Ytop, X, Ybot, Palette(gridborder)),
+    gd:image_filled_polygon(Gd, Index, [{X-3, Ytop}, {X+3, Ytop}, {X, Ytop-5}], Palette(white)),
+    gd:image_line(Gd, Index, X-3, Ytop, X+3, Ytop, Palette(gridborder)),
+    gd:image_line(Gd, Index, X-3, Ytop, X, Ytop-5, Palette(gridborder)),
+    gd:image_line(Gd, Index, X+3, Ytop, X, Ytop-5, Palette(gridborder)).
+
 
 -spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), GridCoef :: float()) ->
     {'ok', [{atom(), non_neg_integer(), string()}]} | {'error', string()}.
