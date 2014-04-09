@@ -4,6 +4,9 @@
 -define(SEC_PER_HOUR, 3600).
 -define(SEC_PER_DAY, 86400).
 -define(FONT_SIZES, [8,9,10,11]).
+-define(A90, 3.14/2).
+-define(GD_STYLED, -2).
+-define(GD_TRANSPARENT, -6).
 
 draw_rectangle(Dim, Palette) ->
     fun({Gd, Index}) ->
@@ -35,6 +38,33 @@ mapX(Dim, From, Period) ->
 mapY(Dim, Y0, Ytop) ->
     fun(Y) ->
         trunc(Dim(sizeY) + Dim(shiftY) - (Y - Y0) * Dim(sizeY) / (Ytop - Y0))
+    end.
+
+draw_time_grid(Dim, Palette, FontPath, From, Period) ->
+    fun({Gd, Index}) ->
+        {ok, List} = calc_time_grid(From, Period, Dim(gridPixels) / Dim(sizeX)),
+        MapX = mapX(Dim, From, Period),
+        Ybot = Dim(sizeY) + Dim(shiftY),
+        Ytop = Dim(sizeY),
+
+        DrawDate = fun(Timestamp, Date, FontSize, Color) ->
+            Font = gd_font:factory(FontPath, FontSize),
+            {ok, W, H} = gd:text_size(Gd, Font, Date, ?A90),
+            X = MapX(Timestamp),
+            Y = trunc(Ybot + H + 6),
+            gd:image_string_ft(Gd, Index, Color, Font, ?A90, trunc(X + W/2), Y, Date),
+            X
+        end,
+        [ if
+            Type == "start" orelse Type == "end" -> 
+                DrawDate(Timestamp, Date, 8, Palette(highlight));
+            Type == "main" ->
+                X = DrawDate(Timestamp, Date, 8, Palette(highlight)),
+                image_dashed_line(Gd, Index, X, Ytop, X, Ybot, Palette(maingrid));
+            Type == "sub" ->
+                X = DrawDate(Timestamp, Date, 7, Palette(text)),
+                image_dashed_line(Gd, Index, X, Ytop, X, Ybot, Palette(text))
+        end || {Type, Timestamp, Date} <- List ]
     end.
 
 -spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), GridCoef :: float()) ->
@@ -198,3 +228,8 @@ ceiling(X) ->
         Pos when Pos > 0 -> T + 1;
         _ -> T
     end.
+
+image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
+    gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
+    gd:image_line(Gd, Index, trunc(X1), trunc(Y1), trunc(X2), trunc(Y2), ?GD_STYLED).
+
