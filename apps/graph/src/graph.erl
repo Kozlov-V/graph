@@ -8,6 +8,46 @@
 -define(GD_STYLED, -2).
 -define(GD_TRANSPARENT, -6).
 
+default_dim() ->
+    List = [
+        {sizeX, 1296},
+        {shiftXleft, 85},
+        {shiftXright, 30},
+        {sizeY, 200},
+        {shiftY, 36},
+        {gridPixels, 25}],
+    fun(P) -> proplists:get_value(P, List) end.
+
+default_theme() ->
+    [
+        {gridborder, {16#00, 16#00, 16#00}},
+        {grid, {16#CC, 16#CC, 16#CC}},
+        {maingrid, {16#AA, 16#AA, 16#AA}},
+        {text, {16#22, 16#22, 16#22}},
+        {highlight, {16#AA, 16#44, 16#44}},
+        {graph, {16#FF, 16#FF, 16#FF}},
+        {background, {16#F0, 16#F0, 16#F0}},
+        {graphborder, {16#33, 16#33, 16#33}}
+    ].
+
+get_palette({Gd, Index}, Colors) ->
+    L = [ begin {ok, C} = gd:image_color_allocate(Gd, Index, R, G, B), {T, C} end || {T, {R, G, B}} <- Colors],
+    fun(C) -> proplists:get_value(C, L) end.
+
+graph(Dim, Theme, From, Period) ->
+    ok = erl_ddll:load_driver("deps/elib_gd/priv/", "elib_gd_drv"),
+
+    {ok, Gd} = gd:new(),
+    {ok, Index} = gd:image_create_true_color(Gd, Dim(shiftXleft) + Dim(sizeX) + Dim(shiftXright), Dim(shiftY) + Dim(sizeY)),
+
+    PossibleThemes = [blue, black_blue, dark_orange],
+    T = case lists:member(Theme, PossibleThemes) of true -> ?MODULE:Theme(); false -> default_theme() end,
+    Palette = get_palette({Gd, Index}, T),
+
+    {ok, Binary} = gd:image_png_ptr(Gd, Index),
+    gd:stop(Gd),
+    Binary.
+
 draw_rectangle(Dim, Palette) ->
     fun({Gd, Index}) ->
         ok = gd:image_filled_rectangle(Gd, Index, 0, 0, Dim(width), Dim(height), Palette(background)),

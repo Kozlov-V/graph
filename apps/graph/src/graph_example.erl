@@ -242,8 +242,9 @@ palette({Gd, Index}) ->
         {graph, {16#FF, 16#FF, 16#FF}},
         {highlight, {16#AA, 16#44, 16#44}},
         {maingrid, {16#AA, 16#AA, 16#AA}},
-        {grid, {16#CC, 16#CC, 16#CC}},
-        {gridborder, {16#00, 16#00, 16#00}}
+
+        {grid, {16#22, 16#22, 16#22}},
+        {gridborder, {16#EF, 16#EF, 16#EF}}
     ],
     L = [ begin {ok, C} = gd:image_color_allocate(Gd, Index, R, G, B), {T, C} end || {T, {R, G, B}} <- Colors],
     fun(C) -> proplists:get_value(C, L) end.
