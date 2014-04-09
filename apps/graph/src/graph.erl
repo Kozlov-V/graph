@@ -27,6 +27,16 @@ draw_work_period(Dim, Palette) ->
             Dim(sizeX) + Dim(shiftXleft) - 1, Dim(sizeY) + Dim(shiftY), Palette(graph))
     end.
 
+mapX(Dim, From, Period) ->
+    fun(T) ->
+        trunc(Dim(shiftXleft) + (T - From) * Dim(sizeX) / Period)
+    end.
+
+mapY(Dim, Y0, Ytop) ->
+    fun(Y) ->
+        trunc(Dim(sizeY) + Dim(shiftY) - (Y - Y0) * Dim(sizeY) / (Ytop - Y0))
+    end.
+
 -spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), GridCoef :: float()) ->
     {'ok', [{atom(), non_neg_integer(), string()}]} | {'error', string()}.
 
