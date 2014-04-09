@@ -3,26 +3,28 @@
 
 -define(SEC_PER_HOUR, 3600).
 -define(SEC_PER_DAY, 86400).
+-define(FONT_SIZES, [8,9,10,11]).
 
-draw_rectangle(Width, Height, Palette) ->
+draw_rectangle(Dim, Palette) ->
     fun({Gd, Index}) ->
-        ok = gd:image_filled_rectangle(Gd, Index, 0, 0, Width, Height, Palette(background)),
-        ok = gd:image_rectangle(Gd, Index, 0, 0, Width - 1, Height - 1, Palette(graphborder))
+        ok = gd:image_filled_rectangle(Gd, Index, 0, 0, Dim(width), Dim(height), Palette(background)),
+        ok = gd:image_rectangle(Gd, Index, 0, 0, Dim(width) - 1, Dim(height) - 1, Palette(graphborder))
     end.
 
-draw_header(FontPath, Text, Width, Palette) ->
+draw_header(Dim, Palette, FontPath, Text) ->
     fun({Gd, Index}) ->
-        PossibleFonts = [ gd_font:factory(FontPath, FontSize) || FontSize <- lists:seq(8, 11) ],
-        Font = lists:last(lists:takewhile(fun(F) -> {ok, W} = gd:text_width(Gd, F, Text), W =< Width end, PossibleFonts)),
+        PossibleFonts = [ gd_font:factory(FontPath, FontSize) || FontSize <- ?FONT_SIZES ],
+        Font = lists:last(lists:takewhile(fun(F) -> {ok, W} = gd:text_width(Gd, F, Text), W =< Dim(width) end, PossibleFonts)),
         {ok, TextWidth} = gd:text_width(Gd, Font, Text),
-        Xheader = trunc((Width - TextWidth) / 2),
+        Xheader = trunc((Dim(width) - TextWidth) / 2),
         Yheader = 24,
         {ok, _} = gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Xheader, Yheader, Text)
     end.
 
-draw_work_period(Left, Top, Right, Bottom, Palette) ->
+draw_work_period(Dim, Palette) ->
     fun({Gd, Index}) ->
-        ok = gd:image_filled_rectangle(Gd, Index, Left, Top, Right, Bottom, Palette(graph))
+        ok = gd:image_filled_rectangle(Gd, Index, Dim(shiftXleft) + 1, Dim(shiftY), 
+            Dim(sizeX) + Dim(shiftXleft) - 1, Dim(sizeY) + Dim(shiftY), Palette(graph))
     end.
 
 -spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), GridCoef :: float()) ->
