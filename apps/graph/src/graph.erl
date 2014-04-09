@@ -7,6 +7,8 @@
 -define(A90, 3.14/2).
 -define(GD_STYLED, -2).
 -define(GD_TRANSPARENT, -6).
+-define(WIDTH, (Dim(shiftXleft) + Dim(sizeX) + Dim(shiftXright))).
+-define(HEIGHT, (Dim(shiftY) + Dim(sizeY) + Dim(legendOffsetY))).
 
 default_dim() ->
     List = [
@@ -15,19 +17,20 @@ default_dim() ->
         {shiftXright, 30},
         {sizeY, 200},
         {shiftY, 36},
-        {gridPixels, 25}],
+        {gridPixels, 25},
+        {legendOffsetY, 90}],
     fun(P) -> proplists:get_value(P, List) end.
 
 default_theme() ->
     [
-        {gridborder, {16#00, 16#00, 16#00}},
-        {grid, {16#CC, 16#CC, 16#CC}},
-        {maingrid, {16#AA, 16#AA, 16#AA}},
-        {text, {16#22, 16#22, 16#22}},
-        {highlight, {16#AA, 16#44, 16#44}},
-        {graph, {16#FF, 16#FF, 16#FF}},
-        {background, {16#F0, 16#F0, 16#F0}},
-        {graphborder, {16#33, 16#33, 16#33}}
+        {background, {16#33, 16#33, 16#33}},
+        {graphborder, {16#88, 16#88, 16#88}},
+        {graph, {16#0A, 16#0A, 16#0A}},
+        {gridborder, {16#EF, 16#EF, 16#EF}},
+        {grid, {16#22, 16#22, 16#22}},
+        {highlight, {16#FF, 16#55, 16#00}},
+        {maingrid, {16#4F, 16#4F, 16#4F}},
+        {text, {16#DF, 16#DF, 16#DF}}
     ].
 
 get_palette({Gd, Index}, Colors) ->
@@ -38,37 +41,38 @@ graph(Dim, Theme, From, Period) ->
     ok = erl_ddll:load_driver("deps/elib_gd/priv/", "elib_gd_drv"),
 
     {ok, Gd} = gd:new(),
-    {ok, Index} = gd:image_create_true_color(Gd, Dim(shiftXleft) + Dim(sizeX) + Dim(shiftXright), Dim(shiftY) + Dim(sizeY)),
+    {ok, Index} = gd:image_create_true_color(Gd, ?WIDTH, ?HEIGHT),
+    G = {Gd, Index},
 
     PossibleThemes = [blue, black_blue, dark_orange],
     T = case lists:member(Theme, PossibleThemes) of true -> ?MODULE:Theme(); false -> default_theme() end,
-    Palette = get_palette({Gd, Index}, T),
+    Palette = get_palette(G, T),
+
+    Fontpath = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
+
+    draw_rectangle(G, Dim, Palette),
+    draw_header(G, Dim, Palette, Fontpath, "mylogin : simple graph"),
+    draw_work_period(G, Dim, Palette),
+    draw_time_grid(G, Dim, Palette, Fontpath, From, Period),
 
     {ok, Binary} = gd:image_png_ptr(Gd, Index),
     gd:stop(Gd),
     Binary.
 
-draw_rectangle(Dim, Palette) ->
-    fun({Gd, Index}) ->
-        ok = gd:image_filled_rectangle(Gd, Index, 0, 0, Dim(width), Dim(height), Palette(background)),
-        ok = gd:image_rectangle(Gd, Index, 0, 0, Dim(width) - 1, Dim(height) - 1, Palette(graphborder))
-    end.
+draw_rectangle({Gd, Index}, Dim, Palette) ->
+    ok = gd:image_filled_rectangle(Gd, Index, 0, 0, ?WIDTH, ?HEIGHT, Palette(background)),
+    ok = gd:image_rectangle(Gd, Index, 0, 0, ?WIDTH - 1, ?HEIGHT - 1, Palette(graphborder)).
 
-draw_header(Dim, Palette, FontPath, Text) ->
-    fun({Gd, Index}) ->
-        PossibleFonts = [ gd_font:factory(FontPath, FontSize) || FontSize <- ?FONT_SIZES ],
-        Font = lists:last(lists:takewhile(fun(F) -> {ok, W} = gd:text_width(Gd, F, Text), W =< Dim(width) end, PossibleFonts)),
-        {ok, TextWidth} = gd:text_width(Gd, Font, Text),
-        Xheader = trunc((Dim(width) - TextWidth) / 2),
-        Yheader = 24,
-        {ok, _} = gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Xheader, Yheader, Text)
-    end.
+draw_header({Gd, Index}, Dim, Palette, FontPath, Text) ->
+    PossibleFonts = [ gd_font:factory(FontPath, FontSize) || FontSize <- ?FONT_SIZES ],
+    Font = lists:last(lists:takewhile(fun(F) -> {ok, W} = gd:text_width(Gd, F, Text), W =< Dim(width) end, PossibleFonts)),
+    {ok, TextWidth} = gd:text_width(Gd, Font, Text),
+    Xheader = trunc((?WIDTH - TextWidth) / 2),
+    Yheader = 24,
+    {ok, _} = gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Xheader, Yheader, Text).
 
-draw_work_period(Dim, Palette) ->
-    fun({Gd, Index}) ->
-        ok = gd:image_filled_rectangle(Gd, Index, Dim(shiftXleft) + 1, Dim(shiftY), 
-            Dim(sizeX) + Dim(shiftXleft) - 1, Dim(sizeY) + Dim(shiftY), Palette(graph))
-    end.
+draw_work_period({Gd, Index}, Dim, Palette) ->
+    ok = gd:image_filled_rectangle(Gd, Index, Dim(shiftXleft) + 1, Dim(shiftY), Dim(sizeX) + Dim(shiftXleft) - 1, Dim(sizeY) + Dim(shiftY), Palette(graph)).
 
 mapX(Dim, From, Period) ->
     fun(T) ->
@@ -80,32 +84,30 @@ mapY(Dim, Y0, Ytop) ->
         trunc(Dim(sizeY) + Dim(shiftY) - (Y - Y0) * Dim(sizeY) / (Ytop - Y0))
     end.
 
-draw_time_grid(Dim, Palette, FontPath, From, Period) ->
-    fun({Gd, Index}) ->
-        {ok, List} = calc_time_grid(From, Period, Dim(gridPixels) / Dim(sizeX)),
-        MapX = mapX(Dim, From, Period),
-        Ybot = Dim(sizeY) + Dim(shiftY),
-        Ytop = Dim(sizeY),
+draw_time_grid({Gd, Index}, Dim, Palette, FontPath, From, Period) ->
+    {ok, List} = calc_time_grid(From, Period, Dim(gridPixels) / Dim(sizeX)),
+    MapX = mapX(Dim, From, Period),
+    Ybot = Dim(sizeY) + Dim(shiftY),
+    Ytop = Dim(shiftY),
 
-        DrawDate = fun(Timestamp, Date, FontSize, Color) ->
-            Font = gd_font:factory(FontPath, FontSize),
-            {ok, W, H} = gd:text_size(Gd, Font, Date, ?A90),
-            X = MapX(Timestamp),
-            Y = trunc(Ybot + H + 6),
-            gd:image_string_ft(Gd, Index, Color, Font, ?A90, trunc(X + W/2), Y, Date),
-            X
-        end,
-        [ if
-            Type == "start" orelse Type == "end" -> 
-                DrawDate(Timestamp, Date, 8, Palette(highlight));
-            Type == "main" ->
-                X = DrawDate(Timestamp, Date, 8, Palette(highlight)),
-                image_dashed_line(Gd, Index, X, Ytop, X, Ybot, Palette(maingrid));
-            Type == "sub" ->
-                X = DrawDate(Timestamp, Date, 7, Palette(text)),
-                image_dashed_line(Gd, Index, X, Ytop, X, Ybot, Palette(text))
-        end || {Type, Timestamp, Date} <- List ]
-    end.
+    DrawDate = fun(Timestamp, Date, FontSize, Color) ->
+        Font = gd_font:factory(FontPath, FontSize),
+        {ok, W, H} = gd:text_size(Gd, Font, Date, ?A90),
+        X = MapX(Timestamp),
+        Y = trunc(Ybot + H + 6),
+        gd:image_string_ft(Gd, Index, Color, Font, ?A90, trunc(X + W/2), Y, Date),
+        X
+    end,
+    [ if
+        Type == "start" orelse Type == "end" -> 
+            DrawDate(Timestamp, Date, 8, Palette(highlight));
+        Type == "main" ->
+            X = DrawDate(Timestamp, Date, 8, Palette(highlight)),
+            image_dashed_line(Gd, Index, X, Ytop, X, Ybot, Palette(maingrid));
+        Type == "sub" ->
+            X = DrawDate(Timestamp, Date, 7, Palette(text)),
+            image_dashed_line(Gd, Index, X, Ytop, X, Ybot, Palette(grid))
+      end || {Type, Timestamp, Date} <- List ].
 
 -spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), GridCoef :: float()) ->
     {'ok', [{atom(), non_neg_integer(), string()}]} | {'error', string()}.
