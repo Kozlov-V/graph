@@ -18,6 +18,7 @@ default_dim() ->
         {sizeY, 200},
         {shiftY, 36},
         {gridPixels, 25},
+        {gridPixelsVert, 40},
         {legendOffsetY, 90}],
     fun(P) -> proplists:get_value(P, List) end.
 
@@ -38,7 +39,7 @@ get_palette({Gd, Index}, Colors) ->
     L = [ begin {ok, C} = gd:image_color_allocate(Gd, Index, R, G, B), {T, C} end || {T, {R, G, B}} <- Colors],
     fun(C) -> proplists:get_value(C, L) end.
 
-graph(Dim, Theme, From, Period) ->
+graph(Dim, Theme, From, Period, Data) ->
     ok = erl_ddll:load_driver("deps/elib_gd/priv/", "elib_gd_drv"),
 
     {ok, Gd} = gd:new(),
@@ -57,6 +58,11 @@ graph(Dim, Theme, From, Period) ->
     draw_time_grid(G, Dim, Palette, Fontpath, From, Period),
     draw_x_axis(G, Dim, Palette),
     draw_y_axis(G, Dim, Palette),
+
+    AllData = lists:flatten([ proplists:get_value(data, L) || L <- Data ]),
+    MinY = lists:min([ Y || {_,Y} <- AllData ]),
+    MaxY = lists:max([ Y || {_,Y} <- AllData ]),
+    {Min, Max, Interval} = draw_horizontal_grid(G, Dim, Palette, MinY, MaxY),
 
     {ok, Binary} = gd:image_png_ptr(Gd, Index),
     gd:stop(Gd),
@@ -79,12 +85,12 @@ draw_work_period({Gd, Index}, Dim, Palette) ->
 
 mapX(Dim, From, Period) ->
     fun(T) ->
-        trunc(Dim(shiftXleft) + (T - From) * Dim(sizeX) / Period)
+        round(Dim(shiftXleft) + (T - From) * Dim(sizeX) / Period)
     end.
 
 mapY(Dim, Y0, Ytop) ->
     fun(Y) ->
-        trunc(Dim(sizeY) + Dim(shiftY) - (Y - Y0) * Dim(sizeY) / (Ytop - Y0))
+        round(Dim(sizeY) + Dim(shiftY) - (Y - Y0) * Dim(sizeY) / (Ytop - Y0))
     end.
 
 draw_time_grid({Gd, Index}, Dim, Palette, FontPath, From, Period) ->
@@ -132,6 +138,22 @@ draw_y_axis({Gd, Index}, Dim, Palette) ->
     gd:image_line(Gd, Index, X-3, Ytop, X, Ytop-5, Palette(gridborder)),
     gd:image_line(Gd, Index, X+3, Ytop, X, Ytop-5, Palette(gridborder)).
 
+draw_horizontal_grid({Gd,Index}, Dim, Palette, MinY, MaxY) ->
+    ColumnInterval = Dim(gridPixelsVert) * (MaxY - MinY) / Dim(sizeY),
+    Intervals = [ math:pow(10, P) * M || P <- lists:seq(-4,18), M <- [1,2,5] ],
+    [Interval|_] = lists:usort(fun(A,B) -> abs(ColumnInterval - A) < abs(ColumnInterval - B) end, Intervals),
+    MinT = Interval * floor(MinY / Interval),
+    MaxT = Interval * ceiling(MaxY / Interval),
+
+    Min = case MinT == MinY of true -> MinT - Interval; false -> MinT end,
+    Max = case MaxT == MaxY of true -> MaxT + Interval; false -> MaxT end,
+    StepT = Interval * Dim(sizeY) / (Max - Min),
+    Step = case ceiling((Max - Min) / Interval) < round(Dim(sizeY) / Dim(gridPixels)) of true -> StepT / 2; false -> StepT end,
+    [ begin
+        Y = Dim(shiftY) + Dim(sizeY) - N*Step,
+        image_dashed_line(Gd, Index, Dim(shiftXleft), Y, Dim(shiftXleft) + Dim(sizeX), Y, Palette(maingrid)) 
+      end || N <- lists:seq(1, trunc(Dim(sizeY)/Step)) ],
+    {Min, Max, Interval}. 
 
 -spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), GridCoef :: float()) ->
     {'ok', [{atom(), non_neg_integer(), string()}]} | {'error', string()}.
@@ -295,7 +317,24 @@ ceiling(X) ->
         _ -> T
     end.
 
+floor(X) ->
+    T = erlang:trunc(X),
+    case (X - T) of
+        Neg when Neg < 0 -> T - 1;
+        Pos when Pos > 0 -> T;
+        _ -> T
+    end.
+
 image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
     gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
     gd:image_line(Gd, Index, trunc(X1), trunc(Y1), trunc(X2), trunc(Y2), ?GD_STYLED).
 
+groupByX(List) ->
+    G = lists:foldr(
+        fun({X,Y}, Acc) -> 
+            E = case gb_trees:lookup(X, Acc) of none -> [Y]; {value, V} -> [Y|V] end, 
+            gb_trees:enter(X, E, Acc)
+        end,
+        gb_trees:empty(),
+        List),
+    gb_trees:to_list(G).
