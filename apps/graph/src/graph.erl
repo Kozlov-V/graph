@@ -63,7 +63,7 @@ graph(Dim, Theme, From, Period, Data) ->
     MinY = lists:min([ Y || {_,Y} <- AllData ]),
     MaxY = lists:max([ Y || {_,Y} <- AllData ]),
     {Min, Max, Interval} = draw_horizontal_grid(G, Dim, Palette, MinY, MaxY, decimal),
-    Pow = lists:max([ pow_of(1000, V) || V <- [Min, Max] ]),
+    draw_sides(G, Dim, Palette, Fontpath, Min, Max, Interval),
 
     {ok, Binary} = gd:image_png_ptr(Gd, Index),
     gd:stop(Gd),
@@ -150,6 +150,22 @@ draw_horizontal_grid({Gd,Index}, Dim, Palette, MinY, MaxY, Type) ->
       end || N <- lists:seq(1, trunc(Dim(sizeY)/Step)) ],
     {Min, Max, Interval}. 
 
+draw_sides({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval) ->
+    L = if
+        Min == 0 andalso Max == 0 -> [1];
+        Min == 0 -> [Max];
+        Max == 0 -> [Min];
+        true -> [Min, Max]
+    end,
+    Pow = lists:max([ pow_of(1000, V) || V <- L ]),
+    MapY = mapY(Dim, Min, Max),
+    [ begin 
+        Y = Min + N * Interval,
+        Str = convert_units(Y, Pow, "", 2),
+        Font = gd_font:factory(Fontpath, 8),
+        {ok, W, H} = gd:text_size(Gd, Font, Str, 0),
+        gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Dim(shiftXleft) - 9 - W, MapY(Y) + 4, Str)
+      end || N <- lists:seq(0, round((Max - Min)/Interval)) ].
 
 calc_horizontal_grid(MinY, MaxY, GridCoef) ->
     calc_horizontal_grid(MinY, MaxY, GridCoef, decimal).
