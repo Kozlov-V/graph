@@ -62,7 +62,8 @@ graph(Dim, Theme, From, Period, Data) ->
     AllData = lists:flatten([ proplists:get_value(data, L) || L <- Data ]),
     MinY = lists:min([ Y || {_,Y} <- AllData ]),
     MaxY = lists:max([ Y || {_,Y} <- AllData ]),
-    {Min, Max, Interval} = draw_horizontal_grid(G, Dim, Palette, MinY, MaxY),
+    {Min, Max, Interval} = draw_horizontal_grid(G, Dim, Palette, MinY, MaxY, decimal),
+    Pow = lists:max([ pow_of(1000, V) || V <- [Min, Max] ]),
 
     {ok, Binary} = gd:image_png_ptr(Gd, Index),
     gd:stop(Gd),
@@ -138,17 +139,11 @@ draw_y_axis({Gd, Index}, Dim, Palette) ->
     gd:image_line(Gd, Index, X-3, Ytop, X, Ytop-5, Palette(gridborder)),
     gd:image_line(Gd, Index, X+3, Ytop, X, Ytop-5, Palette(gridborder)).
 
-draw_horizontal_grid({Gd,Index}, Dim, Palette, MinY, MaxY) ->
-    ColumnInterval = Dim(gridPixelsVert) * (MaxY - MinY) / Dim(sizeY),
-    Intervals = [ math:pow(10, P) * M || P <- lists:seq(-4,18), M <- [1,2,5] ],
-    [Interval|_] = lists:usort(fun(A,B) -> abs(ColumnInterval - A) < abs(ColumnInterval - B) end, Intervals),
-    MinT = Interval * floor(MinY / Interval),
-    MaxT = Interval * ceiling(MaxY / Interval),
+draw_horizontal_grid({Gd,Index}, Dim, Palette, MinY, MaxY, Type) ->
+    {Min, Max, Interval} = calc_horizontal_grid(MinY, MaxY, Dim(gridPixelsVert) / Dim(sizeY), Type),
 
-    Min = case MinT == MinY of true -> MinT - Interval; false -> MinT end,
-    Max = case MaxT == MaxY of true -> MaxT + Interval; false -> MaxT end,
     StepT = Interval * Dim(sizeY) / (Max - Min),
-    Step = case ceiling((Max - Min) / Interval) < round(Dim(sizeY) / Dim(gridPixels)) of true -> StepT / 2; false -> StepT end,
+    Step = case (Max - Min) / Interval < round(Dim(sizeY) / Dim(gridPixels)) of true -> StepT / 2; false -> StepT end,
     [ begin
         Y = Dim(shiftY) + Dim(sizeY) - N*Step,
         image_dashed_line(Gd, Index, Dim(shiftXleft), Y, Dim(shiftXleft) + Dim(sizeX), Y, Palette(maingrid)) 
@@ -364,16 +359,15 @@ groupByX(List) ->
 
 % 204800 (200 KBytes) with '1024' step convert to 209715,2 (0.2MB (204.8 KBytes))
 convert_to_base_1024(Value) ->
-    Pow = trunc(math:log(abs(Value)) / math:log(1000)),
+    Pow = pow_of(1000, Value),
     round(Value * math:pow(1024, Pow) / math:pow(1000, Pow), 10).
 
 get_base_1024_interval(Int, Min, Max) ->
     Interval = convert_to_base_1024(Int),
     AbsMax = lists:max([abs(Min), abs(Max)]),
-    Pow = fun(V) -> trunc(math:log(abs(V)) / math:log(1000)) end,
 
-    AbsMaxPow = Pow(AbsMax),
-    IntPow = Pow(Int),
+    AbsMaxPow = pow_of(1000, AbsMax),
+    IntPow = pow_of(1000, Int),
     if
         AbsMaxPow == IntPow ->
             Interval;
@@ -383,3 +377,5 @@ get_base_1024_interval(Int, Min, Max) ->
             round(Interval * 1.024, 2)
     end.
 
+pow_of(Step, Value) ->
+    trunc(math:log(abs(Value)) / math:log(Step)).
