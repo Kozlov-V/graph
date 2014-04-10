@@ -156,11 +156,21 @@ draw_horizontal_grid({Gd,Index}, Dim, Palette, MinY, MaxY) ->
     {Min, Max, Interval}. 
 
 
-% GridCoef = (desired grid cell height) / (chart height), i.e., 40px / 900px
 calc_horizontal_grid(MinY, MaxY, GridCoef) ->
+    calc_horizontal_grid(MinY, MaxY, GridCoef, decimal).
+    
+% GridCoef = (desired grid cell height) / (chart height), i.e., 40px / 900px
+calc_horizontal_grid(MinY, MaxY, GridCoef, Type) ->
     Raw = (MaxY - MinY) * GridCoef,
     Intervals = [ math:pow(10, P) * M || P <- lists:seq(-4,18), M <- [1,2,5] ],
-    [Interval|_] = lists:usort(fun(A,B) -> abs(Raw - A) < abs(Raw - B) end, Intervals),
+    [Int|_] = lists:usort(fun(A,B) -> abs(Raw - A) < abs(Raw - B) end, Intervals),
+    Interval = if 
+        Type == binary ->
+            get_base_1024_interval(Int, MinY, MaxY);
+        true ->
+            Int
+    end,
+
     MinT = Interval * floor(MinY / Interval),
     MaxT = Interval * ceiling(MaxY / Interval),
 
@@ -351,3 +361,25 @@ groupByX(List) ->
         gb_trees:empty(),
         List),
     gb_trees:to_list(G).
+
+% 204800 (200 KBytes) with '1024' step convert to 209715,2 (0.2MB (204.8 KBytes))
+convert_to_base_1024(Value) ->
+    Pow = trunc(math:log(abs(Value)) / math:log(1000)),
+    round(Value * math:pow(1024, Pow) / math:pow(1000, Pow), 10).
+
+get_base_1024_interval(Int, Min, Max) ->
+    Interval = convert_to_base_1024(Int),
+    AbsMax = lists:max([abs(Min), abs(Max)]),
+    Pow = fun(V) -> trunc(math:log(abs(V)) / math:log(1000)) end,
+
+    AbsMaxPow = Pow(AbsMax),
+    IntPow = Pow(Int),
+    if
+        AbsMaxPow == IntPow ->
+            Interval;
+        IntPow < 0 ->
+            round(Interval * 1.024, 10);
+        true ->
+            round(Interval * 1.024, 2)
+    end.
+
