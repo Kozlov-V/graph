@@ -155,6 +155,19 @@ draw_horizontal_grid({Gd,Index}, Dim, Palette, MinY, MaxY) ->
       end || N <- lists:seq(1, trunc(Dim(sizeY)/Step)) ],
     {Min, Max, Interval}. 
 
+
+% GridCoef = (desired grid cell height) / (chart height), i.e., 40px / 900px
+calc_horizontal_grid(MinY, MaxY, GridCoef) ->
+    Raw = (MaxY - MinY) * GridCoef,
+    Intervals = [ math:pow(10, P) * M || P <- lists:seq(-4,18), M <- [1,2,5] ],
+    [Interval|_] = lists:usort(fun(A,B) -> abs(Raw - A) < abs(Raw - B) end, Intervals),
+    MinT = Interval * floor(MinY / Interval),
+    MaxT = Interval * ceiling(MaxY / Interval),
+
+    Min = case MinT == MinY andalso MinT /= 0 of true -> MinT - Interval; false -> MinT end,
+    Max = case MaxT == MaxY andalso MaxT /= 0 of true -> MaxT + Interval; false -> MaxT end,
+    {Min, Max, Interval}.
+
 -spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), GridCoef :: float()) ->
     {'ok', [{atom(), non_neg_integer(), string()}]} | {'error', string()}.
 

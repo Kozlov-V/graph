@@ -29,5 +29,4 @@ base_1000(_Config) ->
     {15.0, 30.0, 5.0} = graph:calc_horizontal_grid(19, 29, 40/90),
     {0.0, 30.0, 5.0} = graph:calc_horizontal_grid(0, 27.9402, 40/200),
     {5500.0, 8500.0, 500.0} = graph:calc_horizontal_grid(5642, 8084.0000000, 40/200),
-    {15500.0, 8500.0, 500.0} = graph:calc_horizontal_grid(5642, 8084.0000000, 40/200),
     ok.
