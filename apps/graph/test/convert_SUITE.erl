@@ -5,7 +5,11 @@
 all() ->
     [
         unixtime,
-        bytes
+        bytes,
+        decimal_with_units,
+        decimal_without_units,
+        decimal_ignore_units,
+        binary_ignore_units
     ].
 
 init_per_suite(Config) ->
@@ -41,3 +45,19 @@ bytes(_Config) ->
     "2 GB" = graph:convert_units(2147483648.0000000, 3, "B", undefined),
     "10 GB" = graph:convert_units(10737418240.0000000, 3, "B", undefined),
     "9.77 GB" = graph:convert_units(10486808576.0, 3, "B", 2).
+
+decimal_with_units(_Config) ->
+    "99.55 %" = graph:convert_units(99.5485, "%", with_units, decimal, no_ignore_ms, undefined).
+
+decimal_without_units(_Config) ->
+    "6950" = graph:convert_units(6950, "", with_units, decimal, no_ignore_ms, undefined).
+
+decimal_ignore_units(_Config) ->
+    "10 K" = graph:convert_units(10000, "", no_units, decimal, no_ignore_ms, undefined),
+    "21.51 Kpps" = graph:convert_units(21508, "pps", no_units, decimal, no_ignore_ms, undefined),
+    "1.0" = graph:convert_units(1.0000000, "", no_units, decimal, ignore_ms, 1).
+
+binary_ignore_units(_Config) ->
+    "220.0 GB" = graph:convert_units(236223201280, "B", no_units, binary, ignore_ms, 1),
+    "10 G" = graph:convert_units(10737418240.0, "", no_units, binary, no_ignore_ms, undefined),
+    "5.9 GB" = graph:convert_units(6335076761.6000000, "B", no_units, binary, ignore_ms, 1).
