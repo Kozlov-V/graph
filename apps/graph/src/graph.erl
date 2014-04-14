@@ -64,7 +64,9 @@ graph(Dim, Theme, From, Period, Data) ->
     MaxY = lists:max([ Y || {_,Y} <- AllData ]),
     Units = [ proplists:get_value(units, L, "") || L <- Data ],
     U = hd(Units),
-    Type = decimal,
+
+    IsBinary = lists:member(U, ["B", "Bps"]),
+    Type = case IsBinary of true -> binary; false -> decimal end,
     {Min, Max, Interval} = draw_horizontal_grid(G, Dim, Palette, MinY, MaxY, Type),
     draw_sides(G, Dim, Palette, Fontpath, Min, Max, Interval, U, Type),
 
