@@ -62,8 +62,12 @@ graph(Dim, Theme, From, Period, Data) ->
     AllData = lists:flatten([ proplists:get_value(data, L) || L <- Data ]),
     MinY = lists:min([ Y || {_,Y} <- AllData ]),
     MaxY = lists:max([ Y || {_,Y} <- AllData ]),
-    {Min, Max, Interval} = draw_horizontal_grid(G, Dim, Palette, MinY, MaxY, decimal),
-    draw_sides(G, Dim, Palette, Fontpath, Min, Max, Interval),
+    io:format("minmax: ~B : ~B~n", [MinY, MaxY]),
+    Units = [ proplists:get_value(units, L, "") || L <- Data ],
+    U = hd(Units),
+    Type = decimal,
+    {Min, Max, Interval} = draw_horizontal_grid(G, Dim, Palette, MinY, MaxY, Type),
+    draw_sides(G, Dim, Palette, Fontpath, Min, Max, Interval, U, Type),
 
     {ok, Binary} = gd:image_png_ptr(Gd, Index),
     gd:stop(Gd),
@@ -150,7 +154,7 @@ draw_horizontal_grid({Gd,Index}, Dim, Palette, MinY, MaxY, Type) ->
       end || N <- lists:seq(1, trunc(Dim(sizeY)/Step)) ],
     {Min, Max, Interval}. 
 
-draw_sides({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval) ->
+draw_sides({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval, Units, Type) ->
     L = if
         Min == 0 andalso Max == 0 -> [1];
         Min == 0 -> [Max];
@@ -159,9 +163,11 @@ draw_sides({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval) ->
     end,
     Pow = lists:max([ pow_of(1000, V) || V <- L ]),
     MapY = mapY(Dim, Min, Max),
+    Steps = lists:seq(0, round((Max - Min)/Interval)),
+    ML = calc_max_length_after_dot([ convert_units(Min + N*Interval, "", no_units, Type, Pow, undefined, undefined) || N <- Steps ]),
     [ begin 
         Y = Min + N * Interval,
-        Str = convert_units(Y, Pow, "", 2),
+        Str = convert_units(Min + N*Interval, Units, no_units, Type, Pow, undefined, ML),
         Font = gd_font:factory(Fontpath, 8),
         {ok, W, _H} = gd:text_size(Gd, Font, Str, 0),
         gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Dim(shiftXleft) - 9 - W, MapY(Y) + 4, Str)
@@ -403,6 +409,7 @@ pow_of(Step, Value) ->
 % Units :: string()
 % Pow :: undefined | non_neg_integer()
 convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
+    io:format("convert units: ~p~n", [{Value, Units, ConvertType, ValueType, Pow, Ms, Length}]),
     BlackList = ["", "%", "ms", "rpm", "RPM"],
     IsUnitsBlackListed = lists:member(Units, BlackList),
     Abs = abs(Value),
@@ -432,5 +439,5 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
     string:strip(R, right, 32).
 
 calc_max_length_after_dot(L) ->
-    F = fun(S) -> T = string:tokens(S, "."), if length(T) == 2 -> length(lists:last(T)); true -> 0 end end,
+    F = fun(S) -> T = string:tokens(S, ". "), if length(T) > 1 -> length(lists:nth(2, T)); true -> 0 end end,
     lists:max([ F(E) || E <- L ]).
