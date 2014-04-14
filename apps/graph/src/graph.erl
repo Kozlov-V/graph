@@ -302,7 +302,7 @@ convert_units(Value, Pow, Units, Length) ->
                 true -> 
                     sprintf("~." ++ integer_to_list(Length) ++ "..f ~s", [V4, Units]);
                 false ->
-                    sprintf("~p ~s", [V4, Units])
+                    strip_trailing_zeros(sprintf("~f", [V4])) ++ " " ++ Units
             end;
         true ->
             P = case is_integer(Pow) of true -> Pow; false -> ceiling(math:log(A4) / math:log(Step)) end,
@@ -426,9 +426,9 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
         IsUnitsBlackListed orelse (Units == "" andalso ConvertType =:= with_units) ->
             strip_trailing_zeros(sprintf("~." ++ integer_to_list(Precision) ++ "..f", [V6])) ++ " " ++ Units;
         Abs < 1 andalso is_integer(Length) andalso V4 /= 0 ->
-            sprintf("~." ++ integer_to_list(Length) ++ "..f", [V4]) ++ " " ++ Units;
+            strip_trailing_zeros(sprintf("~." ++ integer_to_list(Length) ++ "..f", [V4])) ++ " " ++ Units;
         Abs < 1 ->
-            sprintf("~.4..f", [V4]) ++ " " ++ Units;
+            strip_trailing_zeros(sprintf("~.4..f", [V4])) ++ " " ++ Units;
         true ->
             P = case (Pow == undefined orelse Value == 0) of true -> pow_of(Step, Value); false -> Pow end,
             V = round(Value / math:pow(Step, P), 2),
@@ -443,5 +443,6 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
     string:strip(R, right, 32).
 
 calc_max_length_after_dot(L) ->
+    io:format("~p~n", [L]),
     F = fun(S) -> T = string:tokens(S, ". "), if length(T) > 1 -> length(lists:nth(2, T)); true -> 0 end end,
     lists:max([ F(E) || E <- L ]).
