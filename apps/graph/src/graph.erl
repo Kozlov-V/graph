@@ -443,7 +443,7 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
             P = case (Pow == undefined orelse Value == 0) of true -> pow_of(Step, Value); false -> Pow end,
             V = round(Value / math:pow(Step, P), 2),
             Vs = strip_trailing_zeros(sprintf("~.2..f", [V])),
-            case is_integer(Length) of 
+            case is_integer(Length) andalso Length > 0 of 
                 true -> 
                     sprintf("~." ++ integer_to_list(Length) ++ "..f", [V]) ++ " " ++ pow_to_prefix(P) ++ Units;
                 false ->
@@ -454,5 +454,11 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
 
 calc_max_length_after_dot(L) ->
     io:format("~p~n", [L]),
-    F = fun(S) -> T = string:tokens(S, ". "), if length(T) > 1 -> length(lists:nth(2, T)); true -> 0 end end,
+
+    F = fun(S) -> 
+        T1 = string:tokens(S, " "),
+        N = hd(T1),
+        T2 = string:tokens(N, "."),
+        if length(T2) == 2 -> length(lists:nth(2, T2)); true -> 0 end 
+    end,
     lists:max([ F(E) || E <- L ]).
