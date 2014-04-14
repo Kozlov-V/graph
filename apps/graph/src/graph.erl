@@ -395,3 +395,38 @@ get_base_1024_interval(Int, Min, Max) ->
 
 pow_of(Step, Value) ->
     trunc(math:log(abs(Value)) / math:log(Step)).
+
+% ConvertType :: with_units | no_units
+% ValueType :: binary | decimal
+% Ms :: ignore_ms | no_ignore_ms
+% Length :: undefined | non_neg_integer()
+% Units :: string()
+% Pow :: undefined | non_neg_integer()
+convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
+    BlackList = ["", "%", "ms", "rpm", "RPM"],
+    IsUnitsBlackListed = lists:member(Units, BlackList),
+    Abs = abs(Value),
+    V4 = round(Value, 4),
+    V6 = round(Value, 6),
+    Step = case ValueType == binary of true -> 1024; false -> 1000 end,
+    R = if 
+        IsUnitsBlackListed andalso ConvertType =:= with_units andalso Abs >= 0.01 ->
+            strip_trailing_zeros(sprintf("~.2..f", [V6])) ++ " " ++ Units;
+        IsUnitsBlackListed andalso ConvertType =:= with_units -> 
+            strip_trailing_zeros(sprintf("~.6..f", [V6])) ++ " " ++ Units;
+        Abs < 1 andalso is_integer(Length) andalso V4 /= 0 ->
+            sprintf("~." ++ integer_to_list(Length) ++ "..f", [V4]) ++ " " ++ Units;
+        Abs < 1 ->
+            sprintf("~.4..f", [V4]) ++ " " ++ Units;
+        true ->
+            P = case (Pow == undefined orelse Value == 0) of true -> pow_of(Step, Value); false -> Pow end,
+            V = round(Value / math:pow(Step, P), 2),
+            Vs = strip_trailing_zeros(sprintf("~.2..f", [V])),
+            case is_integer(Length) of 
+                true -> 
+                    sprintf("~." ++ integer_to_list(Length) ++ "..f", [V]) ++ " " ++ pow_to_prefix(P) ++ Units;
+                false ->
+                    sprintf("~s", [Vs]) ++ " " ++ pow_to_prefix(P) ++ Units
+            end
+    end,
+    string:strip(R, right, 32).
