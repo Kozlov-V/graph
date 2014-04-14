@@ -436,7 +436,7 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
         IsUnitsBlackListed orelse (Units == "" andalso ConvertType =:= with_units) ->
             strip_trailing_zeros(sprintf("~." ++ integer_to_list(Precision) ++ "..f", [V6])) ++ " " ++ Units;
         Abs < 1 andalso is_integer(Length) andalso V4 /= 0 ->
-            strip_trailing_zeros(sprintf("~." ++ integer_to_list(Length) ++ "..f", [V4])) ++ " " ++ Units;
+            sprintf("~." ++ integer_to_list(Length) ++ "..f", [V4]) ++ " " ++ Units;
         Abs < 1 ->
             strip_trailing_zeros(sprintf("~.4..f", [V4])) ++ " " ++ Units;
         true ->
