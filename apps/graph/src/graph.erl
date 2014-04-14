@@ -177,7 +177,13 @@ calc_horizontal_grid(MinY, MaxY, GridCoef) ->
     calc_horizontal_grid(MinY, MaxY, GridCoef, decimal).
     
 % GridCoef = (desired grid cell height) / (chart height), i.e., 40px / 900px
-calc_horizontal_grid(MinY, MaxY, GridCoef, Type) ->
+calc_horizontal_grid(N, X, GridCoef, Type) ->
+    {MinY, MaxY} = case abs( (X - N) / X ) =< 0.1 of
+        true ->
+            {case N > 0 of true -> 0.95*N; false -> 1.05*N end, case X > 0 of true -> 1.05*X; false -> 0.95*X end};
+        false ->
+            {N, X}
+    end,
     Raw = (MaxY - MinY) * GridCoef,
     Intervals = [ math:pow(10, P) * M || P <- lists:seq(-4,18), M <- [1,2,5] ],
     [Int|_] = lists:usort(fun(A,B) -> abs(Raw - A) < abs(Raw - B) end, Intervals),
