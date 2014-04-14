@@ -62,7 +62,6 @@ graph(Dim, Theme, From, Period, Data) ->
     AllData = lists:flatten([ proplists:get_value(data, L) || L <- Data ]),
     MinY = lists:min([ Y || {_,Y} <- AllData ]),
     MaxY = lists:max([ Y || {_,Y} <- AllData ]),
-    io:format("minmax: ~B : ~B~n", [MinY, MaxY]),
     Units = [ proplists:get_value(units, L, "") || L <- Data ],
     U = hd(Units),
     Type = decimal,
