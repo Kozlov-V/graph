@@ -6,7 +6,8 @@ all() ->
     [
         base_1000,
         base_1024,
-        close_min_and_max
+        close_min_and_max,
+        same_min_and_max
     ].
 
 init_per_suite(Config) ->
@@ -40,3 +41,6 @@ base_1024(_Config) ->
 
 close_min_and_max(_Config) ->
     {2650000.0, 2950000.0, 50000.0} = graph:calc_horizontal_grid(2807952.0, 2808232, 40/200).
+
+same_min_and_max(_Config) ->
+    {0.0, 204800.0, 51200.0} = graph:calc_horizontal_grid(196608.0, 196608.0, 40/200, binary).
