@@ -10,6 +10,7 @@ all() ->
         decimal_without_units,
         decimal_ignore_units,
         small_percents,
+        precision_defined,
         binary_ignore_units
     ].
 
@@ -66,3 +67,5 @@ binary_ignore_units(_Config) ->
 small_percents(_Config) ->
     "0.09 %" = graph:convert_units(0.0876, "%", no_units, decimal, undefined, no_ignore_ms, undefined).
 
+precision_defined(_Config) ->
+    "0.010" = graph:convert_units(0.01, "", no_units, decimal, undefined, no_ignore_ms, 3).
