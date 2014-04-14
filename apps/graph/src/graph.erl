@@ -163,7 +163,7 @@ draw_sides({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval) ->
         Y = Min + N * Interval,
         Str = convert_units(Y, Pow, "", 2),
         Font = gd_font:factory(Fontpath, 8),
-        {ok, W, H} = gd:text_size(Gd, Font, Str, 0),
+        {ok, W, _H} = gd:text_size(Gd, Font, Str, 0),
         gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Dim(shiftXleft) - 9 - W, MapY(Y) + 4, Str)
       end || N <- lists:seq(0, round((Max - Min)/Interval)) ].
 
@@ -430,3 +430,7 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
             end
     end,
     string:strip(R, right, 32).
+
+calc_max_length_after_dot(L) ->
+    F = fun(S) -> T = string:tokens(S, "."), if length(T) == 2 -> length(lists:last(T)); true -> 0 end end,
+    lists:max([ F(E) || E <- L ]).
