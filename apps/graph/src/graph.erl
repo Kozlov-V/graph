@@ -178,7 +178,15 @@ calc_horizontal_grid(MinY, MaxY, GridCoef) ->
     calc_horizontal_grid(MinY, MaxY, GridCoef, decimal).
     
 % GridCoef = (desired grid cell height) / (chart height), i.e., 40px / 900px
-calc_horizontal_grid(N, X, GridCoef, Type) ->
+calc_horizontal_grid(N2, X2, GridCoef, Type) ->
+    {N, X} = if
+        N2 == X2 andalso X2 == 0 ->
+            {0, 1};
+        N2 == X2 ->
+            {0, X2};
+        true ->
+            {N2, X2}
+    end,
     {MinY, MaxY} = case abs( (X - N) / X ) =< 0.1 of
         true ->
             {case N > 0 of true -> 0.95*N; false -> 1.05*N end, case X > 0 of true -> 1.05*X; false -> 0.95*X end};
