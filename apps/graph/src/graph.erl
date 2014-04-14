@@ -415,17 +415,16 @@ pow_of(Step, Value) ->
 % Pow :: undefined | non_neg_integer()
 convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
     io:format("convert units: ~p~n", [{Value, Units, ConvertType, ValueType, Pow, Ms, Length}]),
-    BlackList = ["", "%", "ms", "rpm", "RPM"],
+    BlackList = ["%", "ms", "rpm", "RPM"],
     IsUnitsBlackListed = lists:member(Units, BlackList),
     Abs = abs(Value),
     V4 = round(Value, 4),
     V6 = round(Value, 6),
     Step = case ValueType == binary of true -> 1024; false -> 1000 end,
+    Precision = case Abs >= 0.01 of true -> 2; false -> 6 end,
     R = if 
-        IsUnitsBlackListed andalso ConvertType =:= with_units andalso Abs >= 0.01 ->
-            strip_trailing_zeros(sprintf("~.2..f", [V6])) ++ " " ++ Units;
-        IsUnitsBlackListed andalso ConvertType =:= with_units -> 
-            strip_trailing_zeros(sprintf("~.6..f", [V6])) ++ " " ++ Units;
+        IsUnitsBlackListed orelse (Units == "" andalso ConvertType =:= with_units) ->
+            strip_trailing_zeros(sprintf("~." ++ integer_to_list(Precision) ++ "..f", [V6])) ++ " " ++ Units;
         Abs < 1 andalso is_integer(Length) andalso V4 /= 0 ->
             sprintf("~." ++ integer_to_list(Length) ++ "..f", [V4]) ++ " " ++ Units;
         Abs < 1 ->

@@ -9,7 +9,7 @@ all() ->
         decimal_with_units,
         decimal_without_units,
         decimal_ignore_units,
-        small_decimals_with_units,
+        small_percents,
         binary_ignore_units
     ].
 
@@ -63,6 +63,6 @@ binary_ignore_units(_Config) ->
     "10 G" = graph:convert_units(10737418240.0, "", no_units, binary, undefined, no_ignore_ms, undefined),
     "5.9 GB" = graph:convert_units(6335076761.6000000, "B", no_units, binary, undefined, ignore_ms, 1).
 
-small_decimals_with_units(_Config) ->
+small_percents(_Config) ->
     "0.09 %" = graph:convert_units(0.0876, "%", no_units, decimal, undefined, no_ignore_ms, undefined).
 
