@@ -462,8 +462,8 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
     end,
     string:strip(R, right, 32).
 
+%% application specified functions
 calc_max_length_after_dot(L) ->
-
     F = fun(S) -> 
         T1 = string:tokens(S, " "),
         N = hd(T1),
