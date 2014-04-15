@@ -51,7 +51,9 @@ graph(Dim, Theme, From, Period, Data) ->
     T = case lists:member(Theme, PossibleThemes) of true -> ?MODULE:Theme(); false -> default_theme() end,
     Palette = get_palette(G, T),
 
-    Fontpath = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
+    % Fontpath = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
+    {ok, Cwd} = file:get_cwd(),
+    Fontpath = Cwd ++ "/DejaVuSans.ttf",
 
     draw_rectangle(G, Dim, Palette),
     draw_header(G, Dim, Palette, Fontpath, "mylogin : simple graph"),
