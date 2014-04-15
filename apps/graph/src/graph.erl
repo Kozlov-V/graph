@@ -32,7 +32,8 @@ default_theme() ->
         {highlight, {16#FF, 16#55, 16#00}},
         {maingrid, {16#4F, 16#4F, 16#4F}},
         {text, {16#DF, 16#DF, 16#DF}},
-        {white, {16#FF, 16#FF, 16#FF}}
+        {white, {16#FF, 16#FF, 16#FF}},
+        {green, {16#00, 16#FF, 16#00}}
     ].
 
 get_palette({Gd, Index}, Colors) ->
@@ -69,6 +70,7 @@ graph(Dim, Theme, From, Period, Data) ->
     Type = case IsBinary of true -> binary; false -> decimal end,
     {Min, Max, Interval} = draw_horizontal_grid(G, Dim, Palette, MinY, MaxY, Type),
     draw_sides(G, Dim, Palette, Fontpath, Min, Max, Interval, U, Type),
+    draw_chart(G, Dim, Palette, From, Period, Min, Max, proplists:get_value(data, hd(Data)), proplists:get_value(color, hd(Data))),
 
     {ok, Binary} = gd:image_png_ptr(Gd, Index),
     gd:stop(Gd),
@@ -98,6 +100,13 @@ mapY(Dim, Y0, Ytop) ->
     fun(Y) ->
         round(Dim(sizeY) + Dim(shiftY) - (Y - Y0) * Dim(sizeY) / (Ytop - Y0))
     end.
+
+draw_chart({Gd, Index}, Dim, Palette, From, Period, Min, Max, Data, Color) ->
+    MapX = mapX(Dim, From, Period),
+    MapY = mapY(Dim, Min, Max),
+    Lines = lists:zip(lists:sublist(Data, length(Data)-1), tl(Data)),
+    [ gd:image_line(Gd, Index, MapX(X1), MapY(Y1), MapX(X2), MapY(Y2), Palette(Color)) || {{X1,Y1},{X2,Y2}} <- Lines ].
+
 
 draw_time_grid({Gd, Index}, Dim, Palette, FontPath, From, Period) ->
     {ok, List} = calc_time_grid(From, Period, Dim(gridPixels) / Dim(sizeX)),
