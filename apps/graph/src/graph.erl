@@ -433,7 +433,6 @@ pow_of(Step, Value) ->
 % Units :: string()
 % Pow :: undefined | non_neg_integer()
 convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
-    io:format("convert units: ~p~n", [{Value, Units, ConvertType, ValueType, Pow, Ms, Length}]),
     BlackList = ["%", "ms", "rpm", "RPM"],
     IsUnitsBlackListed = lists:member(Units, BlackList),
     Abs = abs(Value),
@@ -462,7 +461,6 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
     string:strip(R, right, 32).
 
 calc_max_length_after_dot(L) ->
-    io:format("~p~n", [L]),
 
     F = fun(S) -> 
         T1 = string:tokens(S, " "),
