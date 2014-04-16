@@ -6,7 +6,8 @@ all() ->
     [
         groupByX,
         ceiling,
-        floor
+        floor,
+        round
     ].
 
 init_per_suite(Config) ->
@@ -35,3 +36,7 @@ floor(_Config) ->
     9 = graph:floor(9.999),
     -4 = graph:floor(-3.14),
     4 = graph:floor(4).
+
+round(_Config) ->
+    4.1 = graph:round(4.11, 1),
+    0.03 = graph:round(0.030003, 3).

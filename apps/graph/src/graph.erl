@@ -330,10 +330,6 @@ sprintf(Format, Args) ->
 strip_trailing_zeros(String) ->
     string:strip(string:strip(String, right, $0), right, $.).
 
-round(Value, Limit) when is_integer(Limit), Limit >= 0 ->
-    M = math:pow(10, Limit),
-    round(Value * M) / M.
-
 %% drawing functions
 -spec image_dashed_line(_, _, X1 :: integer(), Y1 :: integer(), 
     X2 :: integer(), Y2 :: integer(), Color :: integer()) -> ok.
@@ -343,6 +339,13 @@ image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
     ok = gd:image_line(Gd, Index, X1, Y1, X2, Y2, ?GD_STYLED).
 
 %% math functions
+
+-spec round(Value :: number(), Limit :: non_neg_integer()) -> float().
+
+round(Value, Limit) when is_integer(Limit), Limit >= 0 ->
+    M = math:pow(10, Limit),
+    round(Value * M) / M.
+
 -spec ceiling(X :: number()) -> integer().
 
 ceiling(X) ->
