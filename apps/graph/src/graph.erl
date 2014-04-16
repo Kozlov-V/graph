@@ -463,11 +463,12 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
     string:strip(R, right, 32).
 
 %% application specified functions
-calc_max_length_after_dot(L) ->
+-spec calc_max_length_after_dot(List :: [string()]) ->
+    non_neg_integer().
+
+calc_max_length_after_dot(List) ->
     F = fun(S) -> 
-        T1 = string:tokens(S, " "),
-        N = hd(T1),
-        T2 = string:tokens(N, "."),
-        if length(T2) == 2 -> length(lists:nth(2, T2)); true -> 0 end 
+        T = string:tokens(hd(string:tokens(S, " ")), "."),
+        case T of [_,X] -> length(X); _ -> 0 end 
     end,
-    lists:max([ F(E) || E <- L ]).
+    lists:max([0 | [ F(E) || E <- List ]]).
