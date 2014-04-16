@@ -364,10 +364,21 @@ groupByX(List) ->
         List),
     gb_trees:to_list(G).
 
-% 204800 (200 KBytes) with '1024' step convert to 209715,2 (0.2MB (204.8 KBytes))
+%% math functions
+-spec pow_of(Step :: number(), Value :: number()) -> integer().
+
+pow_of(Step, Value) when Step > 1 andalso Value /= 0 ->
+    trunc(math:log(abs(Value)) / math:log(Step)).
+
+%% application specified functions
+-spec convert_to_base_1024(Value :: number()) -> float().
+
 convert_to_base_1024(Value) ->
+    % 204800 (200 KBytes) with '1024' step convert to 209715,2 (0.2MB (204.8 KBytes))
     Pow = pow_of(1000, Value),
     round(Value * math:pow(1024, Pow) / math:pow(1000, Pow), 10).
+
+-spec get_base_1024_interval(Int :: number(), Min :: number(), Max :: number()) -> float().
 
 get_base_1024_interval(Int, Min, Max) ->
     Interval = convert_to_base_1024(Int),
@@ -384,13 +395,6 @@ get_base_1024_interval(Int, Min, Max) ->
             round(Interval * 1.024, 2)
     end.
 
-%% math functions
--spec pow_of(Step :: number(), Value :: number()) -> integer().
-
-pow_of(Step, Value) when Step > 1 andalso Value /= 0 ->
-    trunc(math:log(abs(Value)) / math:log(Step)).
-
-%% application specified functions
 -spec convert_units(Unixtime :: non_neg_integer(), unixtime) -> string().
 
 convert_units(Unixtime, unixtime) ->
