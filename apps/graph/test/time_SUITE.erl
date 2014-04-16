@@ -559,4 +559,4 @@ too_close_values(_Config) ->
         {"sub_wo_label",1396900800,""},{"sub_wo_label",1396987200,""},{"sub_wo_label",1397073600,""},
         {"sub_wo_label",1397160000,""},{"sub_wo_label",1397246400,""},{"main",1397332800,"13.04"},
         {"sub_wo_label",1397419200,""},{"sub_wo_label",1397505600,""},{"end",1397658249,"16.04 18:24"}]} 
-        = graph:calc_time_grid(1385201331, 12456918, 25 / 1296, 9).
+        = graph:calc_time_grid(1385201331, 12456918, 25, 1296, 9).

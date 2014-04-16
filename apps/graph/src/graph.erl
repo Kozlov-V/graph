@@ -252,11 +252,14 @@ calc_time_grid(From, Period, CellWidth, Width, MaxLabelWidth) when is_integer(Fr
     Start = case (Offset/Period) < 0.48*GridCoef of true -> 1; false -> 0 end,
     VlineMax = trunc((Period*(1 - 0.48*GridCoef) - Offset) / Interval),
 
+    MainIntervalX = Width * MainInterval / Period,
     F = fun(N) ->
         T1 = From + N*Interval + Offset,
         T2 = T1 + timezone(unixtime_to_erlangtime(From)) - timezone(unixtime_to_erlangtime(T1)),    % daylight saving
         {{Year, Month, Day}, {Hour, Min, _}} = calendar:now_to_local_time(unixtime_to_erlangtime(T2)),
         DayOfWeek = calendar:day_of_the_week({Year, Month, Day}),
+
+        WithoutLabel = MainIntervalX < ceiling((1 + MainInterval / Interval) * MaxLabelWidth),
 
         if 
             Interval < ?SEC_PER_HOUR andalso Hour == 0 andalso Min == 0 ->
@@ -269,6 +272,8 @@ calc_time_grid(From, Period, CellWidth, Width, MaxLabelWidth) when is_integer(Fr
                 {"main", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
             Interval > ?SEC_PER_DAY andalso ((N*Interval) rem  MainInterval) + Offset == MainOffset ->
                 {"main", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
+            WithoutLabel ->
+                {"sub_wo_label", T2, ""};
             Interval == ?SEC_PER_DAY ->
                 {"sub", T2, day_of_week_name(DayOfWeek)};
             Interval > ?SEC_PER_DAY ->
