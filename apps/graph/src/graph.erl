@@ -111,7 +111,8 @@ draw_chart({Gd, Index}, Dim, Palette, From, Period, Min, Max, Data, Color) ->
 
 
 draw_time_grid({Gd, Index}, Dim, Palette, FontPath, From, Period) ->
-    {ok, List} = calc_time_grid(From, Period, Dim(gridPixels), Dim(sizeX)),
+    {ok, MaxLabelWidth, _} = gd_text:size(Gd, gd_font:factory(FontPath, 7), "WWW", ?A90),
+    {ok, List} = calc_time_grid(From, Period, Dim(gridPixels), Dim(sizeX), MaxLabelWidth),
     MapX = mapX(Dim, From, Period),
     Ybot = trunc(Dim(sizeY) + Dim(shiftY)),
     Ytop = trunc(Dim(shiftY)),
@@ -221,10 +222,11 @@ calc_horizontal_grid(N2, X2, GridCoef, Type) ->
     Max = case MaxT == MaxY andalso MaxT /= 0 of true -> MaxT + Interval; false -> MaxT end,
     {Min, Max, Interval}.
 
--spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), CellWidth :: pos_integer(), Width :: pos_integer()) ->
-    {'ok', [{atom(), non_neg_integer(), string()}]} | {'error', string()}.
+-spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), CellWidth :: pos_integer(), 
+    Width :: pos_integer(), MaxLabelWidth :: pos_integer())
+    -> {'ok', [{atom(), non_neg_integer(), string()}]} | {'error', string()}.
 
-calc_time_grid(From, Period, CellWidth, Width) when is_integer(From), is_integer(Period) ->
+calc_time_grid(From, Period, CellWidth, Width, MaxLabelWidth) when is_integer(From), is_integer(Period) ->
     GridCoef = CellWidth / Width,
     Raw = Period * GridCoef,
     Intervals = [
