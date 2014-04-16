@@ -113,14 +113,14 @@ draw_chart({Gd, Index}, Dim, Palette, From, Period, Min, Max, Data, Color) ->
 draw_time_grid({Gd, Index}, Dim, Palette, FontPath, From, Period) ->
     {ok, List} = calc_time_grid(From, Period, Dim(gridPixels) / Dim(sizeX)),
     MapX = mapX(Dim, From, Period),
-    Ybot = Dim(sizeY) + Dim(shiftY),
-    Ytop = Dim(shiftY),
+    Ybot = trunc(Dim(sizeY) + Dim(shiftY)),
+    Ytop = trunc(Dim(shiftY)),
 
     DrawDate = fun(Timestamp, Date, FontSize, Color) ->
         Font = gd_font:factory(FontPath, FontSize),
         {ok, W, H} = gd:text_size(Gd, Font, Date, ?A90),
         X = MapX(Timestamp),
-        Y = trunc(Ybot + H + 6),
+        Y = Ybot + H + 6,
         gd:image_string_ft(Gd, Index, Color, Font, ?A90, trunc(X + W/2), Y, Date),
         X
     end,
@@ -161,7 +161,7 @@ draw_horizontal_grid({Gd,Index}, Dim, Palette, MinY, MaxY, Type) ->
     StepT = Interval * Dim(sizeY) / (Max - Min),
     Step = case (Max - Min) / Interval < round(Dim(sizeY) / Dim(gridPixels)) of true -> StepT / 2; false -> StepT end,
     [ begin
-        Y = Dim(shiftY) + Dim(sizeY) - N*Step,
+        Y = trunc(Dim(shiftY) + Dim(sizeY) - N*Step),
         image_dashed_line(Gd, Index, Dim(shiftXleft), Y, Dim(shiftXleft) + Dim(sizeX), Y, Palette(maingrid)) 
       end || N <- lists:seq(1, trunc(Dim(sizeY)/Step)) ],
     {Min, Max, Interval}. 
@@ -350,12 +350,16 @@ floor(X) ->
         _ -> T
     end.
 
+%% drawing functions
+-spec image_dashed_line(_, _, X1 :: integer(), Y1 :: integer(), 
+    X2 :: integer(), Y2 :: integer(), Color :: integer()) -> ok.
+
 image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
-    gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
-    gd:image_line(Gd, Index, trunc(X1), trunc(Y1), trunc(X2), trunc(Y2), ?GD_STYLED).
+    ok = gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
+    ok = gd:image_line(Gd, Index, X1, Y1, X2, Y2, ?GD_STYLED).
 
 %% math functions
--spec groupByX([{any(), any()}]) -> [{any(), [any()]}].
+-spec groupByX([{any(), any()}]) -> [{any(), list()}].
 
 groupByX(List) ->
     G = lists:foldr(fun({X,Y}, Acc) -> 
