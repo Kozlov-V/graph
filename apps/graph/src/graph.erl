@@ -334,6 +334,16 @@ round(Value, Limit) when is_integer(Limit), Limit >= 0 ->
     M = math:pow(10, Limit),
     round(Value * M) / M.
 
+%% drawing functions
+-spec image_dashed_line(_, _, X1 :: integer(), Y1 :: integer(), 
+    X2 :: integer(), Y2 :: integer(), Color :: integer()) -> ok.
+
+image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
+    ok = gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
+    ok = gd:image_line(Gd, Index, X1, Y1, X2, Y2, ?GD_STYLED).
+
+%% math functions
+
 ceiling(X) ->
     T = trunc(X),
     case X - T of 
@@ -350,15 +360,6 @@ floor(X) ->
         _ -> T
     end.
 
-%% drawing functions
--spec image_dashed_line(_, _, X1 :: integer(), Y1 :: integer(), 
-    X2 :: integer(), Y2 :: integer(), Color :: integer()) -> ok.
-
-image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
-    ok = gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
-    ok = gd:image_line(Gd, Index, X1, Y1, X2, Y2, ?GD_STYLED).
-
-%% math functions
 -spec groupByX([{any(), any()}]) -> [{any(), list()}].
 
 groupByX(List) ->
