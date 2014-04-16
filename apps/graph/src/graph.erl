@@ -311,19 +311,6 @@ unixtime_to_erlangtime(Timestamp) ->
 date2str(Format, Args) when is_list(Format), is_list(Args) ->
     lists:flatten(io_lib:format(Format, Args)).
 
-pow_to_prefix(Pow) ->
-    case Pow of
-        0 -> "";
-        1 -> "K";
-        2 -> "M";
-        3 -> "G";
-        4 -> "T";
-        5 -> "P";
-        6 -> "E";
-        7 -> "Z";
-        8 -> "Y"
-    end.
-
 sprintf(Format, Args) ->
     lists:flatten(io_lib:format(Format, Args)).
 
@@ -338,8 +325,22 @@ image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
     ok = gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
     ok = gd:image_line(Gd, Index, X1, Y1, X2, Y2, ?GD_STYLED).
 
-%% math functions
+-spec pow_to_prefix(Pow :: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8) -> string().
 
+pow_to_prefix(Pow) when is_integer(Pow), Pow >= 0, Pow =< 8 ->
+    case Pow of
+        0 -> "";
+        1 -> "K";
+        2 -> "M";
+        3 -> "G";
+        4 -> "T";
+        5 -> "P";
+        6 -> "E";
+        7 -> "Z";
+        8 -> "Y"
+    end.
+
+%% math functions
 -spec round(Value :: number(), Limit :: non_neg_integer()) -> float().
 
 round(Value, Limit) when is_integer(Limit), Limit >= 0 ->
