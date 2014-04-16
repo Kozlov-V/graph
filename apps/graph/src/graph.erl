@@ -300,43 +300,6 @@ convert_units(Unixtime, unixtime) ->
     {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:now_to_local_time(unixtime_to_erlangtime(Unixtime)),
     sprintf("~4..0B.~2..0B.~2..0B ~2..0B:~2..0B:~2..0B", [Year, Month, Day, Hour, Min, Sec]).
 
-convert_units(Value, Pow, Units, Length) ->
-    IsBinary = lists:member(Units, ["B", "Bps"]),
-    IsBlackListed = lists:member(Units, ["%", "ms", "rpm", "RPM"]),
-    IsEmptyUnits = Units == "",
-    Step = case IsBinary of true -> 1024; false -> 1000 end,
-    V4 = round(Value, 4),
-    A4 = abs(V4),
-    if
-        IsBlackListed orelse IsEmptyUnits ->
-            V = case A4 >= 0.01 of true -> round(Value, 2); false -> Value end,
-            strip_trailing_zeros(sprintf("~.6..f", [V])) ++ " " ++ Units;
-        A4 == 0  ->
-            case is_integer(Length) of 
-                true ->
-                    sprintf("~." ++ integer_to_list(Length) ++ "..f ~s", [V4, Units]);
-                false ->
-                    sprintf("~p ~s", [0, Units])
-            end;
-        A4 < 1 ->
-            case is_integer(Length) of 
-                true -> 
-                    sprintf("~." ++ integer_to_list(Length) ++ "..f ~s", [V4, Units]);
-                false ->
-                    strip_trailing_zeros(sprintf("~f", [V4])) ++ " " ++ Units
-            end;
-        true ->
-            P = case is_integer(Pow) of true -> Pow; false -> ceiling(math:log(A4) / math:log(Step)) end,
-            V = Value / math:pow(Step, P),
-            V10 = strip_trailing_zeros(sprintf("~.10..f", [V])),
-            case is_integer(Length) of
-                true ->
-                    sprintf("~." ++ integer_to_list(Length) ++ "..f ~s~s", [V, pow_to_prefix(P), Units]);
-                false ->
-                    sprintf("~s ~s~s", [V10, pow_to_prefix(P), Units])
-            end
-    end.
-
 %% 
 timezone(Time) ->
     LocalTime = calendar:now_to_local_time(Time),
