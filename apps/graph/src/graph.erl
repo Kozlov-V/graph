@@ -111,7 +111,7 @@ draw_chart({Gd, Index}, Dim, Palette, From, Period, Min, Max, Data, Color) ->
 
 
 draw_time_grid({Gd, Index}, Dim, Palette, FontPath, From, Period) ->
-    {ok, MaxLabelWidth, _} = gd_text:size(Gd, gd_font:factory(FontPath, 7), "WWW", ?A90),
+    {ok, MaxLabelWidth, _} = gd:text_size(Gd, gd_font:factory(FontPath, 7), "WWW", ?A90),
     {ok, List} = calc_time_grid(From, Period, Dim(gridPixels), Dim(sizeX), MaxLabelWidth),
     MapX = mapX(Dim, From, Period),
     Ybot = trunc(Dim(sizeY) + Dim(shiftY)),
@@ -131,6 +131,9 @@ draw_time_grid({Gd, Index}, Dim, Palette, FontPath, From, Period) ->
         Type == "main" ->
             X = DrawDate(Timestamp, Date, 8, Palette(highlight)),
             image_dashed_line(Gd, Index, X, Ytop, X, Ybot, Palette(maingrid));
+        Type == "sub_wo_label" ->
+            X = MapX(Timestamp),
+            image_dashed_line(Gd, Index, X, Ytop, X, Ybot, Palette(grid));
         Type == "sub" ->
             X = DrawDate(Timestamp, Date, 7, Palette(text)),
             image_dashed_line(Gd, Index, X, Ytop, X, Ybot, Palette(grid))
