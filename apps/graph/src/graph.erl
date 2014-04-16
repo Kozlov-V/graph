@@ -268,7 +268,9 @@ calc_time_grid(From, Period, GridCoef) when is_integer(From), is_integer(Period)
                 {"main", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
             Interval > ?SEC_PER_DAY andalso ((N*Interval) rem  MainInterval) + Offset == MainOffset ->
                 {"main", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
-            Interval >= ?SEC_PER_DAY ->
+            Interval == ?SEC_PER_DAY ->
+                {"sub", T2, day_of_week_name(DayOfWeek)};
+            Interval > ?SEC_PER_DAY ->
                 {"sub", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
             Interval < ?SEC_PER_DAY -> 
                 {"sub", T2, sprintf("~2..0B:~2..0B", [Hour, Min])}
@@ -309,6 +311,19 @@ unixtime_to_erlangtime(Timestamp) ->
 
 sprintf(Format, Args) when is_list(Format), is_list(Args) ->
     lists:flatten(io_lib:format(Format, Args)).
+
+%% date functions
+day_of_week_name(Num) ->
+    case Num of
+        1 -> "Mon";
+        2 -> "Tue";
+        3 -> "Wed";
+        4 -> "Thu";
+        5 -> "Fri";
+        6 -> "Sat";
+        7 -> "Sun"
+    end.
+
 
 %% drawing functions
 -spec image_dashed_line(_, _, X1 :: integer(), Y1 :: integer(), 
