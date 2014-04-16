@@ -176,10 +176,10 @@ draw_sides({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval, Units, Type)
     Pow = lists:max([ pow_of(1000, V) || V <- L ]),
     MapY = mapY(Dim, Min, Max),
     Steps = lists:seq(0, round((Max - Min)/Interval)),
-    ML = calc_max_length_after_dot([ convert_units(Min + N*Interval, "", no_units, Type, Pow, undefined, undefined) || N <- Steps ]),
+    ML = calc_max_length_after_dot([ convert_units(Min + N*Interval, "", no_units, Type, Pow, undefined) || N <- Steps ]),
     [ begin 
         Y = Min + N * Interval,
-        Str = convert_units(Min + N*Interval, Units, no_units, Type, Pow, undefined, ML),
+        Str = convert_units(Min + N*Interval, Units, no_units, Type, Pow, ML),
         Font = gd_font:factory(Fontpath, 8),
         {ok, W, _H} = gd:text_size(Gd, Font, Str, 0),
         gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Dim(shiftXleft) - 9 - W, MapY(Y) + 4, Str)
@@ -431,10 +431,9 @@ pow_of(Step, Value) ->
 %% application specified functions
 
 -spec convert_units(Value :: number(), Units :: string(), ConvertType :: with_units | no_units, ValueType :: decimal | binary, 
-    Pow :: undefined | non_neg_integer(), Ms :: ignore_ms | no_ignore_ms, Length :: undefined | non_neg_integer)
-    -> string().
+    Pow :: undefined | non_neg_integer(), Length :: undefined | non_neg_integer) -> string().
 
-convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
+convert_units(Value, Units, ConvertType, ValueType, Pow, Length) ->
     BlackList = ["%", "ms", "rpm", "RPM"],
     IsUnitsBlackListed = lists:member(Units, BlackList),
     Abs = abs(Value),
@@ -462,8 +461,7 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
     end,
     string:strip(R, right, 32).
 
--spec calc_max_length_after_dot(List :: [string()]) ->
-    non_neg_integer().
+-spec calc_max_length_after_dot(List :: [string()]) -> non_neg_integer().
 
 calc_max_length_after_dot(List) ->
     F = fun(S) -> 

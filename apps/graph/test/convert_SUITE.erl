@@ -50,26 +50,26 @@ bytes(_Config) ->
     "9.77 GB" = graph:convert_units(10486808576.0, 3, "B", 2).
 
 decimal_with_units(_Config) ->
-    "99.55 %" = graph:convert_units(99.5485, "%", with_units, decimal, undefined, no_ignore_ms, undefined).
+    "99.55 %" = graph:convert_units(99.5485, "%", with_units, decimal, undefined, undefined).
 
 decimal_without_units(_Config) ->
-    "6950" = graph:convert_units(6950, "", with_units, decimal, undefined, no_ignore_ms, undefined).
+    "6950" = graph:convert_units(6950, "", with_units, decimal, undefined, undefined).
 
 decimal_ignore_units(_Config) ->
-    "10 K" = graph:convert_units(10000, "", no_units, decimal, undefined, no_ignore_ms, undefined),
-    "21.51 Kpps" = graph:convert_units(21508, "pps", no_units, decimal, undefined, no_ignore_ms, undefined),
-    "1.0" = graph:convert_units(1.0000000, "", no_units, decimal, undefined, ignore_ms, 1).
+    "10 K" = graph:convert_units(10000, "", no_units, decimal, undefined, undefined),
+    "21.51 Kpps" = graph:convert_units(21508, "pps", no_units, decimal, undefined, undefined),
+    "1.0" = graph:convert_units(1.0000000, "", no_units, decimal, undefined, 1).
 
 binary_ignore_units(_Config) ->
-    "220.0 GB" = graph:convert_units(236223201280, "B", no_units, binary, undefined, ignore_ms, 1),
-    "10 G" = graph:convert_units(10737418240.0, "", no_units, binary, undefined, no_ignore_ms, undefined),
-    "5.9 GB" = graph:convert_units(6335076761.6000000, "B", no_units, binary, undefined, ignore_ms, 1).
+    "220.0 GB" = graph:convert_units(236223201280, "B", no_units, binary, undefined, 1),
+    "10 G" = graph:convert_units(10737418240.0, "", no_units, binary, undefined, undefined),
+    "5.9 GB" = graph:convert_units(6335076761.6000000, "B", no_units, binary, undefined, 1).
 
 small_percents(_Config) ->
-    "0.09 %" = graph:convert_units(0.0876, "%", no_units, decimal, undefined, no_ignore_ms, undefined).
+    "0.09 %" = graph:convert_units(0.0876, "%", no_units, decimal, undefined, undefined).
 
 precision_defined(_Config) ->
-    "0.010" = graph:convert_units(0.01, "", no_units, decimal, undefined, no_ignore_ms, 3).
+    "0.010" = graph:convert_units(0.01, "", no_units, decimal, undefined, 3).
 
 small_values_with_undefined_length(_Config) ->
-    "0.6" = graph:convert_units(0.6000000, "", no_units, decimal, undefined, ignore_ms, undefined).
+    "0.6" = graph:convert_units(0.6000000, "", no_units, decimal, undefined, undefined).
