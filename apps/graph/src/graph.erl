@@ -343,6 +343,7 @@ image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
     ok = gd:image_line(Gd, Index, X1, Y1, X2, Y2, ?GD_STYLED).
 
 %% math functions
+-spec ceiling(X :: number()) -> integer().
 
 ceiling(X) ->
     T = trunc(X),
@@ -351,6 +352,8 @@ ceiling(X) ->
         Pos when Pos > 0 -> T + 1;
         _ -> T
     end.
+
+-spec floor(X :: number()) -> integer().
 
 floor(X) ->
     T = erlang:trunc(X),
