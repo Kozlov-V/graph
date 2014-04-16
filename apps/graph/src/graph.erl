@@ -111,7 +111,7 @@ draw_chart({Gd, Index}, Dim, Palette, From, Period, Min, Max, Data, Color) ->
 
 
 draw_time_grid({Gd, Index}, Dim, Palette, FontPath, From, Period) ->
-    {ok, List} = calc_time_grid(From, Period, Dim(gridPixels) / Dim(sizeX)),
+    {ok, List} = calc_time_grid(From, Period, Dim(gridPixels), Dim(sizeX)),
     MapX = mapX(Dim, From, Period),
     Ybot = trunc(Dim(sizeY) + Dim(shiftY)),
     Ytop = trunc(Dim(shiftY)),
@@ -221,11 +221,11 @@ calc_horizontal_grid(N2, X2, GridCoef, Type) ->
     Max = case MaxT == MaxY andalso MaxT /= 0 of true -> MaxT + Interval; false -> MaxT end,
     {Min, Max, Interval}.
 
--spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), GridCoef :: float()) ->
+-spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), CellWidth :: pos_integer(), Width :: pos_integer()) ->
     {'ok', [{atom(), non_neg_integer(), string()}]} | {'error', string()}.
 
-% GridCoef = (desired grid cell width) / (chart width), i.e., 25px / 900px
-calc_time_grid(From, Period, GridCoef) when is_integer(From), is_integer(Period) ->
+calc_time_grid(From, Period, CellWidth, Width) when is_integer(From), is_integer(Period) ->
+    GridCoef = CellWidth / Width,
     Raw = Period * GridCoef,
     Intervals = [
         {?SEC_PER_HOUR, 60},                        % 1 min
@@ -249,6 +249,7 @@ calc_time_grid(From, Period, GridCoef) when is_integer(From), is_integer(Period)
     MainOffset = calc_offset(From, MainInterval),
     Start = case (Offset/Period) < 0.48*GridCoef of true -> 1; false -> 0 end,
     VlineMax = trunc((Period*(1 - 0.48*GridCoef) - Offset) / Interval),
+
     F = fun(N) ->
         T1 = From + N*Interval + Offset,
         T2 = T1 + timezone(unixtime_to_erlangtime(From)) - timezone(unixtime_to_erlangtime(T1)),    % daylight saving
