@@ -296,10 +296,6 @@ calc_offset(FromU, Interval) ->
             Interval - (FromU + TZ) rem Interval
     end.
 
-convert_units(Unixtime, unixtime) ->
-    {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:now_to_local_time(unixtime_to_erlangtime(Unixtime)),
-    sprintf("~4..0B.~2..0B.~2..0B ~2..0B:~2..0B:~2..0B", [Year, Month, Day, Hour, Min, Sec]).
-
 %% 
 timezone(Time) ->
     LocalTime = calendar:now_to_local_time(Time),
@@ -392,6 +388,11 @@ pow_of(Step, Value) ->
     trunc(math:log(abs(Value)) / math:log(Step)).
 
 %% application specified functions
+-spec convert_units(Unixtime :: non_neg_integer(), unixtime) -> string().
+
+convert_units(Unixtime, unixtime) ->
+    {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:now_to_local_time(unixtime_to_erlangtime(Unixtime)),
+    sprintf("~4..0B.~2..0B.~2..0B ~2..0B:~2..0B:~2..0B", [Year, Month, Day, Hour, Min, Sec]).
 
 -spec convert_units(Value :: number(), Units :: string(), ConvertType :: with_units | no_units, ValueType :: decimal | binary, 
     Pow :: undefined | non_neg_integer(), Length :: undefined | non_neg_integer) -> string().
