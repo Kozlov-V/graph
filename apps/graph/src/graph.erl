@@ -354,17 +354,16 @@ image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
     gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
     gd:image_line(Gd, Index, trunc(X1), trunc(Y1), trunc(X2), trunc(Y2), ?GD_STYLED).
 
+%% math functions
+-spec groupByX([{any(), any()}]) -> [{any(), [any()]}].
+
 groupByX(List) ->
-    G = lists:foldr(
-        fun({X,Y}, Acc) -> 
+    G = lists:foldr(fun({X,Y}, Acc) -> 
             E = case gb_trees:lookup(X, Acc) of none -> [Y]; {value, V} -> [Y|V] end, 
             gb_trees:enter(X, E, Acc)
-        end,
-        gb_trees:empty(),
-        List),
+        end, gb_trees:empty(), List),
     gb_trees:to_list(G).
 
-%% math functions
 -spec pow_of(Step :: number(), Value :: number()) -> integer().
 
 pow_of(Step, Value) when Step > 1 andalso Value /= 0 ->
