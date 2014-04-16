@@ -4,6 +4,7 @@
 
 all() ->
     [
+        strip_trailing_zeros,
         groupByX,
         ceiling,
         floor,
@@ -40,3 +41,9 @@ floor(_Config) ->
 round(_Config) ->
     4.1 = graph:round(4.11, 1),
     0.03 = graph:round(0.030003, 3).
+
+strip_trailing_zeros(_Config) ->
+    "4.1" = graph:strip_trailing_zeros("4.10000"),
+    "12" = graph:strip_trailing_zeros("12.0000000"),
+    "-3" = graph:strip_trailing_zeros("-3"),
+    "-3.001" = graph:strip_trailing_zeros("-3.00100").

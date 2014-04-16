@@ -310,9 +310,6 @@ unixtime_to_erlangtime(Timestamp) ->
 sprintf(Format, Args) when is_list(Format), is_list(Args) ->
     lists:flatten(io_lib:format(Format, Args)).
 
-strip_trailing_zeros(String) ->
-    string:strip(string:strip(String, right, $0), right, $.).
-
 %% drawing functions
 -spec image_dashed_line(_, _, X1 :: integer(), Y1 :: integer(), 
     X2 :: integer(), Y2 :: integer(), Color :: integer()) -> ok.
@@ -320,21 +317,6 @@ strip_trailing_zeros(String) ->
 image_dashed_line(Gd, Index, X1, Y1, X2, Y2, Color) ->
     ok = gd:image_set_style(Gd, Index, [Color, Color, ?GD_TRANSPARENT, ?GD_TRANSPARENT]),
     ok = gd:image_line(Gd, Index, X1, Y1, X2, Y2, ?GD_STYLED).
-
--spec pow_to_prefix(Pow :: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8) -> string().
-
-pow_to_prefix(Pow) when is_integer(Pow), Pow >= 0, Pow =< 8 ->
-    case Pow of
-        0 -> "";
-        1 -> "K";
-        2 -> "M";
-        3 -> "G";
-        4 -> "T";
-        5 -> "P";
-        6 -> "E";
-        7 -> "Z";
-        8 -> "Y"
-    end.
 
 %% math functions
 -spec round(Value :: number(), Limit :: non_neg_integer()) -> float().
@@ -362,15 +344,6 @@ floor(X) ->
         Pos when Pos > 0 -> T;
         _ -> T
     end.
-
--spec groupByX([{any(), any()}]) -> [{any(), list()}].
-
-groupByX(List) ->
-    G = lists:foldr(fun({X,Y}, Acc) -> 
-            E = case gb_trees:lookup(X, Acc) of none -> [Y]; {value, V} -> [Y|V] end, 
-            gb_trees:enter(X, E, Acc)
-        end, gb_trees:empty(), List),
-    gb_trees:to_list(G).
 
 -spec pow_of(Step :: number(), Value :: number()) -> integer().
 
@@ -447,3 +420,35 @@ calc_max_length_after_dot(List) ->
         case T of [_,X] -> length(X); _ -> 0 end 
     end,
     lists:max([0 | [ F(E) || E <- List ]]).
+
+-spec pow_to_prefix(Pow :: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8) -> string().
+
+pow_to_prefix(Pow) when is_integer(Pow), Pow >= 0, Pow =< 8 ->
+    case Pow of
+        0 -> "";
+        1 -> "K";
+        2 -> "M";
+        3 -> "G";
+        4 -> "T";
+        5 -> "P";
+        6 -> "E";
+        7 -> "Z";
+        8 -> "Y"
+    end.
+
+
+%% other functions
+-spec groupByX([{any(), any()}]) -> [{any(), list()}].
+
+groupByX(List) ->
+    G = lists:foldr(fun({X,Y}, Acc) -> 
+            E = case gb_trees:lookup(X, Acc) of none -> [Y]; {value, V} -> [Y|V] end, 
+            gb_trees:enter(X, E, Acc)
+        end, gb_trees:empty(), List),
+    gb_trees:to_list(G).
+
+-spec strip_trailing_zeros(String :: string()) -> string().
+
+strip_trailing_zeros(String) ->
+    string:strip(string:strip(String, right, $0), right, $.).
+
