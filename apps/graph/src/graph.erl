@@ -384,7 +384,10 @@ get_base_1024_interval(Int, Min, Max) ->
             round(Interval * 1.024, 2)
     end.
 
-pow_of(Step, Value) ->
+%% math functions
+-spec pow_of(Step :: number(), Value :: number()) -> integer().
+
+pow_of(Step, Value) when Step > 1 andalso Value /= 0 ->
     trunc(math:log(abs(Value)) / math:log(Step)).
 
 %% application specified functions
