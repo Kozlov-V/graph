@@ -257,21 +257,21 @@ calc_time_grid(From, Period, GridCoef) when is_integer(From), is_integer(Period)
 
         if 
             Interval < ?SEC_PER_HOUR andalso Hour == 0 andalso Min == 0 ->
-                {"main",T2, date2str("~2..0B.~2..0B", [Day, Month])};
+                {"main",T2, sprintf("~2..0B.~2..0B", [Day, Month])};
             Interval < ?SEC_PER_HOUR andalso Min == 0 ->
-                {"main",T2, date2str("~2..0B:~2..0B", [Hour, Min])};
+                {"main",T2, sprintf("~2..0B:~2..0B", [Hour, Min])};
             Interval >= ?SEC_PER_HOUR andalso Interval < ?SEC_PER_DAY andalso Hour == 0 andalso Min == 0 ->
-                {"main", T2, date2str("~2..0B.~2..0B", [Day, Month])};
+                {"main", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
             Interval >= ?SEC_PER_HOUR andalso Interval < ?SEC_PER_DAY andalso Hour == 0 ->
-                {"main", T2, date2str("~2..0B.~2..0B ~2..0B:~2..0B", [Day, Month, Hour, Min])};
+                {"main", T2, sprintf("~2..0B.~2..0B ~2..0B:~2..0B", [Day, Month, Hour, Min])};
             Interval == ?SEC_PER_DAY andalso DayOfWeek == 7 ->   % sunday
-                {"main", T2, date2str("~2..0B.~2..0B", [Day, Month])};
+                {"main", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
             Interval > ?SEC_PER_DAY andalso ((N*Interval) rem  MainInterval) + Offset == MainOffset ->
-                {"main", T2, date2str("~2..0B.~2..0B", [Day, Month])};
+                {"main", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
             Interval >= ?SEC_PER_DAY ->
-                {"sub", T2, date2str("~2..0B.~2..0B", [Day, Month])};
+                {"sub", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
             Interval < ?SEC_PER_DAY -> 
-                {"sub", T2, date2str("~2..0B:~2..0B", [Hour, Min])}
+                {"sub", T2, sprintf("~2..0B:~2..0B", [Hour, Min])}
         end
 
     end,
@@ -279,8 +279,8 @@ calc_time_grid(From, Period, GridCoef) when is_integer(From), is_integer(Period)
     {{_, Sm, Sd}, {Sh, Smin, _}} = calendar:now_to_local_time(unixtime_to_erlangtime(From)),
     {{_, Em, Ed}, {Eh, Emin, _}} = calendar:now_to_local_time(unixtime_to_erlangtime(From + Period)),
     
-    S = {"start", From, date2str("~2..0B.~2..0B ~2..0B:~2..0B", [Sd, Sm, Sh, Smin])},
-    E = {"end", From + Period, date2str("~2..0B.~2..0B ~2..0B:~2..0B", [Ed, Em, Eh, Emin])},
+    S = {"start", From, sprintf("~2..0B.~2..0B ~2..0B:~2..0B", [Sd, Sm, Sh, Smin])},
+    E = {"end", From + Period, sprintf("~2..0B.~2..0B ~2..0B:~2..0B", [Ed, Em, Eh, Emin])},
     {ok, [S] ++ Res ++ [E]}.
 
 calc_offset(FromU, Interval) ->
@@ -305,13 +305,9 @@ timezone(Time) ->
 unixtime_to_erlangtime(Timestamp) ->
     {Timestamp div 1000000, Timestamp rem 1000000, 0}.
 
--spec date2str(Format :: string(), Args :: [pos_integer()]) -> 
-    string().
+-spec sprintf(Format :: string(), Args :: list()) -> string().
 
-date2str(Format, Args) when is_list(Format), is_list(Args) ->
-    lists:flatten(io_lib:format(Format, Args)).
-
-sprintf(Format, Args) ->
+sprintf(Format, Args) when is_list(Format), is_list(Args) ->
     lists:flatten(io_lib:format(Format, Args)).
 
 strip_trailing_zeros(String) ->
