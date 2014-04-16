@@ -262,8 +262,6 @@ calc_time_grid(From, Period, GridCoef) when is_integer(From), is_integer(Period)
                 {"main",T2, sprintf("~2..0B:~2..0B", [Hour, Min])};
             Interval >= ?SEC_PER_HOUR andalso Interval < ?SEC_PER_DAY andalso Hour == 0 andalso Min == 0 ->
                 {"main", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
-            Interval >= ?SEC_PER_HOUR andalso Interval < ?SEC_PER_DAY andalso Hour == 0 ->
-                {"main", T2, sprintf("~2..0B.~2..0B ~2..0B:~2..0B", [Day, Month, Hour, Min])};
             Interval == ?SEC_PER_DAY andalso DayOfWeek == 7 ->   % sunday
                 {"main", T2, sprintf("~2..0B.~2..0B", [Day, Month])};
             Interval > ?SEC_PER_DAY andalso ((N*Interval) rem  MainInterval) + Offset == MainOffset ->
