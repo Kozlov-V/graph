@@ -428,12 +428,12 @@ get_base_1024_interval(Int, Min, Max) ->
 pow_of(Step, Value) ->
     trunc(math:log(abs(Value)) / math:log(Step)).
 
-% ConvertType :: with_units | no_units
-% ValueType :: binary | decimal
-% Ms :: ignore_ms | no_ignore_ms
-% Length :: undefined | non_neg_integer()
-% Units :: string()
-% Pow :: undefined | non_neg_integer()
+%% application specified functions
+
+-spec convert_units(Value :: number(), Units :: string(), ConvertType :: with_units | no_units, ValueType :: decimal | binary, 
+    Pow :: undefined | non_neg_integer(), Ms :: ignore_ms | no_ignore_ms, Length :: undefined | non_neg_integer)
+    -> string().
+
 convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
     BlackList = ["%", "ms", "rpm", "RPM"],
     IsUnitsBlackListed = lists:member(Units, BlackList),
@@ -462,7 +462,6 @@ convert_units(Value, Units, ConvertType, ValueType, Pow, Ms, Length) ->
     end,
     string:strip(R, right, 32).
 
-%% application specified functions
 -spec calc_max_length_after_dot(List :: [string()]) ->
     non_neg_integer().
 
