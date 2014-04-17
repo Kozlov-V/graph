@@ -161,7 +161,7 @@ draw_y_axis({Gd, Index}, Dim, Palette) ->
     gd:image_line(Gd, Index, X+3, Ytop, X, Ytop-5, Palette(gridborder)).
 
 draw_horizontal_grid({Gd,Index}, Dim, Palette, MinY, MaxY, Type) ->
-    {Min, Max, Interval} = calc_horizontal_grid(MinY, MaxY, Dim(gridPixelsVert) / Dim(sizeY), Type),
+    {Min, Max, Interval} = calc_min_max_interval(MinY, MaxY, Dim(gridPixelsVert), Dim(sizeY), Type),
 
     StepT = Interval * Dim(sizeY) / (Max - Min),
     Step = case (Max - Min) / Interval < round(Dim(sizeY) / Dim(gridPixels)) of true -> StepT / 2; false -> StepT end,
@@ -189,42 +189,6 @@ draw_sides({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval, Units, Type)
         {ok, W, _H} = gd:text_size(Gd, Font, Str, 0),
         gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Dim(shiftXleft) - 9 - W, MapY(Y) + 4, Str)
       end || N <- lists:seq(0, round((Max - Min)/Interval)) ].
-
-calc_horizontal_grid(MinY, MaxY, GridCoef) ->
-    calc_horizontal_grid(MinY, MaxY, GridCoef, decimal).
-    
-% GridCoef = (desired grid cell height) / (chart height), i.e., 40px / 900px
-calc_horizontal_grid(N2, X2, GridCoef, Type) ->
-    {N, X} = if
-        N2 == X2 andalso X2 == 0 ->
-            {0, 1};
-        N2 == X2 ->
-            {0, X2};
-        true ->
-            {N2, X2}
-    end,
-    {MinY, MaxY} = case abs( (X - N) / X ) =< 0.1 of
-        true ->
-            {case N > 0 of true -> 0.95*N; false -> 1.05*N end, case X > 0 of true -> 1.05*X; false -> 0.95*X end};
-        false ->
-            {N, X}
-    end,
-    Raw = (MaxY - MinY) * GridCoef,
-    Intervals = [ math:pow(10, P) * M || P <- lists:seq(-4,18), M <- [1,2,5] ],
-    [Int|_] = lists:usort(fun(A,B) -> abs(Raw - A) < abs(Raw - B) end, Intervals),
-    Interval = if 
-        Type == binary ->
-            get_base_1024_interval(Int, MinY, MaxY);
-        true ->
-            Int
-    end,
-
-    MinT = Interval * floor(MinY / Interval),
-    MaxT = Interval * ceiling(MaxY / Interval),
-
-    Min = case MinT == MinY andalso MinT /= 0 of true -> MinT - Interval; false -> MinT end,
-    Max = case MaxT == MaxY andalso MaxT /= 0 of true -> MaxT + Interval; false -> MaxT end,
-    {Min, Max, Interval}.
 
 -spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), CellWidth :: pos_integer(), 
     Width :: pos_integer(), MaxLabelWidth :: pos_integer())
