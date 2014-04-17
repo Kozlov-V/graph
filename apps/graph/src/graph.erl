@@ -463,7 +463,7 @@ pow_to_prefix(Pow) when is_integer(Pow), Pow >= 0, Pow =< 8 ->
 
 -spec calc_min_max_interval(Min :: undefined | number(), Max :: undefined | number(), 
     GridHeight :: pos_integer(), Height :: pos_integer(), Type :: binary | decimal) 
-    -> {number(), number(), number()}.
+    -> {float(), float(), float()}.
 
 calc_min_max_interval(undefined, Max, GridHeight, Height, Type) ->
     calc_min_max_interval(0, Max, GridHeight, Height, Type);
