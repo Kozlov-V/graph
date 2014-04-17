@@ -3,6 +3,7 @@
 
 -define(SEC_PER_HOUR, 3600).
 -define(SEC_PER_DAY, 86400).
+-define(MIL, 1000000).
 -define(FONT_SIZES, [8,9,10,11]).
 -define(A90, 3.14/2).
 -define(GD_STYLED, -2).
@@ -460,6 +461,43 @@ pow_to_prefix(Pow) when is_integer(Pow), Pow >= 0, Pow =< 8 ->
         8 -> "Y"
     end.
 
+-spec calc_min_max_interval(Min :: undefined | number(), Max :: undefined | number(), 
+    GridHeight :: pos_integer(), Height :: pos_integer(), Type :: binary | decimal) 
+    -> {number(), number(), number()}.
+
+calc_min_max_interval(undefined, Max, GridHeight, Height, Type) ->
+    calc_min_max_interval(0, Max, GridHeight, Height, Type);
+
+calc_min_max_interval(Min, undefined, GridHeight, Height, Type) ->
+    calc_min_max_interval(Min, 0, GridHeight, Height, Type);
+
+calc_min_max_interval(Min, Max, GridHeight, Height, Type) when Min == Max, Min == 0 ->
+    calc_min_max_interval(0, 1, GridHeight, Height, Type);
+
+calc_min_max_interval(Min, Max, GridHeight, Height, Type) when Min == Max ->
+    calc_min_max_interval(0, Max, GridHeight, Height, Type);
+
+calc_min_max_interval(N, X, GridHeight, Height, Type) ->
+    MaxV = lists:max([abs(N), abs(X)]),
+    {Min, Max} = case abs(X-N) =< 0.1*MaxV of
+        true ->
+            {case N > 0 of true -> 0.95*N; false -> 1.05*N end, case X > 0 of true -> 1.05*X; false -> 0.95*X end};
+        false ->
+            {N, X}
+    end,
+    % io:format("[~p, ~p]~n", [Min, Max]),
+    GridCoef = GridHeight / Height,
+    Raw = (Max - Min) * GridCoef,
+    Intervals = [ math:pow(10, P) * M || P <- lists:seq(-4,18), M <- [1,2,5] ],
+    [Int|_] = lists:usort(fun(A,B) -> abs(Raw - A) < abs(Raw - B) end, Intervals),
+    Interval = case Type == binary of true -> get_base_1024_interval(Int, Min, Max); false -> Int end,
+
+    MinAligned = round(Interval * ?MIL * floor(Min / Interval)) / ?MIL,
+    MaxAligned = round(Interval * ?MIL * ceiling(Max / Interval)) / ?MIL,
+
+    MinR = case MinAligned == Min andalso MinAligned /= 0 of true -> MinAligned - Interval; false -> MinAligned end,
+    MaxR = case MaxAligned == Max andalso MaxAligned /= 0 of true -> MaxAligned + Interval; false -> MaxAligned end,
+    {MinR, MaxR, Interval}.
 
 %% other functions
 -spec groupByX([{any(), any()}]) -> [{any(), list()}].
