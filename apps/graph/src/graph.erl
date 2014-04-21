@@ -190,6 +190,23 @@ draw_sides({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval, Units, Type)
         gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Dim(shiftXleft) - 9 - W, MapY(Y) + 4, Str)
       end || N <- lists:seq(0, round((Max - Min)/Interval)) ].
 
+calc_hgrid(Min, Max, Interval, SizeY, ShiftY, GridPixels, GridPixelsVert, Units, Type) ->
+    S = Interval / (Max - Min),
+    Step = S * SizeY,
+    GridStep = case (Max - Min) / Interval < round(SizeY / GridPixels) of true -> Step / 2; false -> Step end,
+    Lines = [ {line, round(ShiftY + SizeY - N*GridStep)} 
+        || N <- lists:takewhile(fun(N) -> SizeY > N*GridStep end, lists:seq(1, trunc(SizeY/GridStep))) ],
+    
+    Base = case Type of binary -> 1024; decimal -> 1000 end,
+    Pow = lists:max([ pow_of(Base, N) || N <- lists:filter(fun(V) -> V > 0 end, [abs(Min), abs(Max)]) ]),
+
+    Seq = lists:takewhile(fun(N) -> Max > Min + (Max-Min)*S*(N+0.5) end, lists:seq(0, trunc(SizeY/Step))),
+    Values = [ Min + N*Interval || N <- Seq ] ++ [Max],
+    ML = calc_max_length_after_dot([ convert_units(V, "", no_units, Type, Pow, undefined) || V <- Values ]),
+    Labels = [ {label, round(ShiftY + SizeY - N*Step + 4), convert_units(Min + N*Interval, Units, no_units, Type, Pow, ML)} || N <- Seq ],
+    Lines ++ Labels ++ [{label, ShiftY + 4, convert_units(Max, Units, no_units, Type, Pow, ML)}].
+
+
 -spec calc_time_grid(From :: non_neg_integer(), Period :: non_neg_integer(), CellWidth :: pos_integer(), 
     Width :: pos_integer(), MaxLabelWidth :: pos_integer())
     -> {'ok', [{atom(), non_neg_integer(), string()}]} | {'error', string()}.
