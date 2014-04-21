@@ -4,7 +4,8 @@
 
 all() ->
     [
-        calc_min_max_interval
+        calc_min_max_interval,
+        calc_hgrid
     ].
 
 init_per_suite(Config) ->
@@ -62,3 +63,16 @@ calc_min_max_interval(_Config) ->
     {1440000000.0, 1620000000.0000000, 20000000.0} = graph:calc_min_max_interval(1528471049, 1532129950.0000000, 40, 200, decimal),
     {6000000.0, 22000000.0000000, 2000000.0} = graph:calc_min_max_interval(7944848, 20236960.0000000, 40, 200, decimal),
     {0.0, 2500000.0000000, 500000.0} = graph:calc_min_max_interval(2459110, 2459110.0000000, 40, 200, decimal).
+
+calc_hgrid(_Config) ->
+    [{line, 219},{line, 203},{line, 186},{line, 169},{line, 153},
+        {line, 136},{line, 119},{line, 103},{line, 86},{line, 69},{line, 53},     
+        {label, 240, "0 bps"},{label, 207, "0.2 bps"},{label, 173, "0.4 bps"},
+        {label, 140, "0.6 bps"},{label, 107, "0.8 bps"},{label, 73, "1.0 bps"},{label, 40, "1.2 bps"}] 
+        = graph:calc_hgrid(0.0000, 1.2000000, 0.2, 200, 36, 25, 40, "bps", decimal),
+        
+    [{line, 222},{line, 207},{line, 193},{line, 179},{line, 165},
+        {line, 150},{line, 136},{line, 122},{line, 107},{line, 93},{line, 79},{line, 65},{line, 50},
+        {label, 240, "28.0 GB"},{label, 211, "28.5 GB"},{label, 183, "29.0 GB"},{label, 154, "29.5 GB"},
+        {label, 126, "30.0 GB"},{label, 97, "30.5 GB"},{label, 69, "31.0 GB"},{label, 40, "31.5 GB"}] 
+        = graph:calc_hgrid(30064771072.000000, 33822867456.0000000, 536870912.000000, 200, 36, 25, 40, "B", binary).
