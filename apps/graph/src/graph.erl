@@ -164,9 +164,9 @@ calc_max(Data) ->
     case L of [] -> undefined; _ -> lists:max([ Y || {_,Y} <- L ]) end.
 
 calc_type(Data) ->
-    L = lists:append([ proplists:get_value(units, E, []) || E <- Data ]),
+    L = [ proplists:get_value(units, E, []) || E <- Data ],
     IsBinary = sets:intersection(sets:from_list(L), sets:from_list(?BINARY)) == sets:new(),
-    case IsBinary of true -> binary; false -> decimal end.
+    case IsBinary of true -> decimal; false -> binary end.
 
 calc_units(Data) ->
     L = [ proplists:get_value(units, E, "") || E <- Data ],
