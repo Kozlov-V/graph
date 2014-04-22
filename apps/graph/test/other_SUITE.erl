@@ -8,7 +8,11 @@ all() ->
         groupByX,
         ceiling,
         floor,
-        round
+        round,
+        calc_min,
+        calc_max,
+        calc_units,
+        calc_type
     ].
 
 init_per_suite(Config) ->
@@ -47,3 +51,22 @@ strip_trailing_zeros(_Config) ->
     "12" = graph:strip_trailing_zeros("12.0000000"),
     "-3" = graph:strip_trailing_zeros("-3"),
     "-3.001" = graph:strip_trailing_zeros("-3.00100").
+
+calc_min(_Config) ->
+    2 = graph:calc_min([[{data, [{3,10}, {4,5}, {5, 2}]}]]),
+    undefined = graph:calc_min([]).
+
+calc_max(_Config) ->
+    10 = graph:calc_max([[{data, [{3,10}, {4,5}, {5, 2}]}]]),
+    undefined = graph:calc_max([]).
+
+calc_type(_Config) ->
+    binary = graph:calc_type([[{data, []}, {units, "B"}]]),
+    decimal = graph:calc_type([[{units, "q/s"}]]),
+    binary = graph:calc_type([
+        [{data, []}, {units, "B"}],
+        [{data, []}, {units, "Bps"}]]).
+
+calc_units(_Config) ->
+    "Bps" = graph:calc_units([[{data, []}, {units, "Bps"}], [{data, []}, {units, "Bps"}]]),
+    "" = graph:calc_units([[{data, []}, {units, "Bps"}], [{data, []}, {units, "pps"}]]).
