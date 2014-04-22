@@ -10,6 +10,7 @@
 -define(GD_TRANSPARENT, -6).
 -define(WIDTH, (Dim(shiftXleft) + Dim(sizeX) + Dim(shiftXright))).
 -define(HEIGHT, (Dim(shiftY) + Dim(sizeY) + Dim(legendOffsetY))).
+-define(BINARY, ["B", "Bps"]).
 
 default_dim() ->
     List = [
@@ -52,7 +53,6 @@ graph(Dim, Theme, From, Period, Data) ->
     T = case lists:member(Theme, PossibleThemes) of true -> ?MODULE:Theme(); false -> default_theme() end,
     Palette = get_palette(G, T),
 
-    % Fontpath = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf",
     {ok, Cwd} = file:get_cwd(),
     Fontpath = Cwd ++ "/DejaVuSans.ttf",
 
@@ -63,21 +63,20 @@ graph(Dim, Theme, From, Period, Data) ->
     draw_x_axis(G, Dim, Palette),
     draw_y_axis(G, Dim, Palette),
 
-    AllData = lists:flatten([ proplists:get_value(data, L) || L <- Data ]),
-    MinY = lists:min([ Y || {_,Y} <- AllData ]),
-    MaxY = lists:max([ Y || {_,Y} <- AllData ]),
-    Units = [ proplists:get_value(units, L, "") || L <- Data ],
-    U = hd(Units),
+    Type = calc_type(Data),
+    Units = calc_units(Data),
 
-    IsBinary = lists:member(U, ["B", "Bps"]),
-    Type = case IsBinary of true -> binary; false -> decimal end,
-    {Min, Max, Interval} = draw_horizontal_grid(G, Dim, Palette, MinY, MaxY, Type),
-    draw_sides(G, Dim, Palette, Fontpath, Min, Max, Interval, U, Type),
-    draw_chart(G, Dim, Palette, From, Period, Min, Max, proplists:get_value(data, hd(Data)), proplists:get_value(color, hd(Data))),
+    {Min, Max, Interval} = calc_min_max_interval(calc_min(Data), calc_max(Data), Dim(gridPixelsVert), Dim(sizeY), Type),
+    draw_hgrid(G, Dim, Palette, Fontpath, Min, Max, Interval, Units, Type),
+
+    draw_charts(G, Dim, Palette, From, Period, Min, Max, Data),
 
     {ok, Binary} = gd:image_png_ptr(Gd, Index),
     gd:stop(Gd),
     Binary.
+
+draw_charts(G, Dim, Palette, From, Period, Min, Max, Data) ->
+    [ draw_chart(G, Dim, Palette, From, Period, Min, Max, proplists:get_value(data, E), proplists:get_value(color, E)) || E <- Data ].
 
 draw_rectangle({Gd, Index}, Dim, Palette) ->
     ok = gd:image_filled_rectangle(Gd, Index, 0, 0, ?WIDTH, ?HEIGHT, Palette(background)),
@@ -95,14 +94,10 @@ draw_work_period({Gd, Index}, Dim, Palette) ->
     ok = gd:image_filled_rectangle(Gd, Index, Dim(shiftXleft) + 1, Dim(shiftY), Dim(sizeX) + Dim(shiftXleft) - 1, Dim(sizeY) + Dim(shiftY), Palette(graph)).
 
 mapX(Dim, From, Period) ->
-    fun(T) ->
-        round(Dim(shiftXleft) + (T - From) * Dim(sizeX) / Period)
-    end.
+    fun(T) -> round(Dim(shiftXleft) + (T - From) * Dim(sizeX) / Period) end.
 
 mapY(Dim, Y0, Ytop) ->
-    fun(Y) ->
-        round(Dim(sizeY) + Dim(shiftY) - (Y - Y0) * Dim(sizeY) / (Ytop - Y0))
-    end.
+    fun(Y) -> round(Dim(sizeY) + Dim(shiftY) - (Y - Y0) * Dim(sizeY) / (Ytop - Y0)) end.
 
 draw_chart({Gd, Index}, Dim, Palette, From, Period, Min, Max, Data, Color) ->
     MapX = mapX(Dim, From, Period),
@@ -160,37 +155,37 @@ draw_y_axis({Gd, Index}, Dim, Palette) ->
     gd:image_line(Gd, Index, X-3, Ytop, X, Ytop-5, Palette(gridborder)),
     gd:image_line(Gd, Index, X+3, Ytop, X, Ytop-5, Palette(gridborder)).
 
-draw_horizontal_grid({Gd,Index}, Dim, Palette, MinY, MaxY, Type) ->
-    {Min, Max, Interval} = calc_min_max_interval(MinY, MaxY, Dim(gridPixelsVert), Dim(sizeY), Type),
+calc_min(Data) ->
+    L = lists:append([ proplists:get_value(data, E, []) || E <- Data ]),
+    case L of [] -> undefined; _ -> lists:min([ Y || {_,Y} <- L ]) end.
 
-    StepT = Interval * Dim(sizeY) / (Max - Min),
-    Step = case (Max - Min) / Interval < round(Dim(sizeY) / Dim(gridPixels)) of true -> StepT / 2; false -> StepT end,
-    [ begin
-        Y = trunc(Dim(shiftY) + Dim(sizeY) - N*Step),
-        image_dashed_line(Gd, Index, Dim(shiftXleft), Y, Dim(shiftXleft) + Dim(sizeX), Y, Palette(maingrid)) 
-      end || N <- lists:seq(1, trunc(Dim(sizeY)/Step)) ],
-    {Min, Max, Interval}. 
+calc_max(Data) ->
+    L = lists:append([ proplists:get_value(data, E, []) || E <- Data ]),
+    case L of [] -> undefined; _ -> lists:max([ Y || {_,Y} <- L ]) end.
 
-draw_sides({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval, Units, Type) ->
-    L = if
-        Min == 0 andalso Max == 0 -> [1];
-        Min == 0 -> [Max];
-        Max == 0 -> [Min];
-        true -> [Min, Max]
+calc_type(Data) ->
+    L = lists:append([ proplists:get_value(units, E, []) || E <- Data ]),
+    IsBinary = sets:intersection(sets:from_list(L), sets:from_list(?BINARY)) == sets:new(),
+    case IsBinary of true -> binary; false -> decimal end.
+
+calc_units(Data) ->
+    L = [ proplists:get_value(units, E, "") || E <- Data ],
+    AllUnits = sets:to_list(sets:from_list(L)),
+    case AllUnits of [U] -> U; _ -> "" end.
+
+draw_hgrid({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval, Units, Type) ->
+    Font = gd_font:factory(Fontpath, 8),
+    F = fun({line, Y}) ->
+            image_dashed_line(Gd, Index, Dim(shiftXleft), Y, Dim(shiftXleft) + Dim(sizeX), Y, Palette(maingrid));
+        ({label, Y, Str}) ->
+            {ok, W, _H} = gd:text_size(Gd, Font, Str, 0),
+            gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Dim(shiftXleft) - 9 - W, Y, Str)
     end,
-    Pow = lists:max([ pow_of(1000, V) || V <- L ]),
-    MapY = mapY(Dim, Min, Max),
-    Steps = lists:seq(0, round((Max - Min)/Interval)),
-    ML = calc_max_length_after_dot([ convert_units(Min + N*Interval, "", no_units, Type, Pow, undefined) || N <- Steps ]),
-    [ begin 
-        Y = Min + N * Interval,
-        Str = convert_units(Min + N*Interval, Units, no_units, Type, Pow, ML),
-        Font = gd_font:factory(Fontpath, 8),
-        {ok, W, _H} = gd:text_size(Gd, Font, Str, 0),
-        gd:image_string_ft(Gd, Index, Palette(text), Font, 0, Dim(shiftXleft) - 9 - W, MapY(Y) + 4, Str)
-      end || N <- lists:seq(0, round((Max - Min)/Interval)) ].
+    [ F(E) || E <- calc_hgrid(Min, Max, Interval, Dim(sizeY), Dim(shiftY), Dim(gridPixels), Dim(gridPixelsVert), Units, Type) ].
+   
+            
 
-calc_hgrid(Min, Max, Interval, SizeY, ShiftY, GridPixels, GridPixelsVert, Units, Type) ->
+calc_hgrid(Min, Max, Interval, SizeY, ShiftY, GridPixels, _GridPixelsVert, Units, Type) ->
     S = Interval / (Max - Min),
     Step = S * SizeY,
     GridStep = case (Max - Min) / Interval < round(SizeY / GridPixels) of true -> Step / 2; false -> Step end,
@@ -466,7 +461,6 @@ calc_min_max_interval(N, X, GridHeight, Height, Type) ->
         false ->
             {N, X}
     end,
-    % io:format("[~p, ~p]~n", [Min, Max]),
     GridCoef = GridHeight / Height,
     Raw = (Max - Min) * GridCoef,
     Intervals = [ math:pow(10, P) * M || P <- lists:seq(-4,18), M <- [1,2,5] ],
