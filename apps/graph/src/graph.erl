@@ -10,7 +10,7 @@
 -define(GD_TRANSPARENT, -6).
 -define(WIDTH, (Dim(shiftXleft) + Dim(sizeX) + Dim(shiftXright))).
 -define(HEIGHT, (Dim(shiftY) + Dim(sizeY) + Dim(legendOffsetY))).
--define(BINARY, ["B", "Bps"]).
+-define(BINARY, [<<"B">>, <<"Bps">>]).
 
 default_dim() ->
     List = [
@@ -35,7 +35,7 @@ default_theme() ->
         {maingrid, {16#4F, 16#4F, 16#4F}},
         {text, {16#DF, 16#DF, 16#DF}},
         {white, {16#FF, 16#FF, 16#FF}},
-        {green, {16#00, 16#FF, 16#00}}
+        {<<"green">>, {16#00, 16#FF, 16#00}}
     ].
 
 get_palette({Gd, Index}, Colors) ->
@@ -76,7 +76,7 @@ graph(Dim, Theme, From, Period, Data) ->
     Binary.
 
 draw_charts(G, Dim, Palette, From, Period, Min, Max, Data) ->
-    [ draw_chart(G, Dim, Palette, From, Period, Min, Max, proplists:get_value(data, E), proplists:get_value(color, E)) || E <- Data ].
+    [ draw_chart(G, Dim, Palette, From, Period, Min, Max, proplists:get_value(<<"data">>, E), proplists:get_value(<<"color">>, E)) || E <- Data ].
 
 draw_rectangle({Gd, Index}, Dim, Palette) ->
     ok = gd:image_filled_rectangle(Gd, Index, 0, 0, ?WIDTH, ?HEIGHT, Palette(background)),
@@ -103,7 +103,7 @@ draw_chart({Gd, Index}, Dim, Palette, From, Period, Min, Max, Data, Color) ->
     MapX = mapX(Dim, From, Period),
     MapY = mapY(Dim, Min, Max),
     Lines = lists:zip(lists:sublist(Data, length(Data)-1), tl(Data)),
-    [ gd:image_line(Gd, Index, MapX(X1), MapY(Y1), MapX(X2), MapY(Y2), Palette(Color)) || {{X1,Y1},{X2,Y2}} <- Lines ].
+    [ gd:image_line(Gd, Index, MapX(X1), MapY(Y1), MapX(X2), MapY(Y2), Palette(Color)) || {[X1,Y1],[X2,Y2]} <- Lines ].
 
 
 draw_time_grid({Gd, Index}, Dim, Palette, FontPath, From, Period) ->
@@ -156,22 +156,22 @@ draw_y_axis({Gd, Index}, Dim, Palette) ->
     gd:image_line(Gd, Index, X+3, Ytop, X, Ytop-5, Palette(gridborder)).
 
 calc_min(Data) ->
-    L = lists:append([ proplists:get_value(data, E, []) || E <- Data ]),
-    case L of [] -> undefined; _ -> lists:min([ Y || {_,Y} <- L ]) end.
+    L = lists:append([ proplists:get_value(<<"data">>, E, []) || E <- Data ]),
+    case L of [] -> undefined; _ -> lists:min([ Y || [_,Y] <- L ]) end.
 
 calc_max(Data) ->
-    L = lists:append([ proplists:get_value(data, E, []) || E <- Data ]),
-    case L of [] -> undefined; _ -> lists:max([ Y || {_,Y} <- L ]) end.
+    L = lists:append([ proplists:get_value(<<"data">>, E, []) || E <- Data ]),
+    case L of [] -> undefined; _ -> lists:max([ Y || [_,Y] <- L ]) end.
 
 calc_type(Data) ->
-    L = [ proplists:get_value(units, E, []) || E <- Data ],
+    L = [ proplists:get_value(<<"units">>, E, []) || E <- Data ],
     IsBinary = sets:intersection(sets:from_list(L), sets:from_list(?BINARY)) == sets:new(),
     case IsBinary of true -> decimal; false -> binary end.
 
 calc_units(Data) ->
-    L = [ proplists:get_value(units, E, "") || E <- Data ],
+    L = [ proplists:get_value(<<"units">>, E, <<>>) || E <- Data ],
     AllUnits = sets:to_list(sets:from_list(L)),
-    case AllUnits of [U] -> U; _ -> "" end.
+    case AllUnits of [U] -> binary_to_list(U); _ -> "" end.
 
 draw_hgrid({Gd, Index}, Dim, Palette, Fontpath, Min, Max, Interval, Units, Type) ->
     Font = gd_font:factory(Fontpath, 8),

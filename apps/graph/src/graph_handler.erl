@@ -7,8 +7,14 @@ init({tcp, http}, Req, _Opts) ->
     {ok, Req, undefined_state}.
 
 handle(Req, State) ->
-    {ok, Req2} = cowboy_req:reply(200, [], <<"dummy">>, Req),
-    {ok, Req2, State}.
+    {ok, Body, Req2} = cowboy_req:body(Req),
+    {Decoded} = jiffy:decode(Body),
+    From = proplists:get_value(<<"from">>, Decoded),
+    Period = proplists:get_value(<<"period">>, Decoded),
+    Data = [ E || {E} <- proplists:get_value(<<"data">>, Decoded) ],
+    Bin = graph:graph(graph:default_dim(), graph:default_theme(), From, Period, Data),
+    {ok, Req3} = cowboy_req:reply(200, [{<<"content-type">>, <<"image/png">>}], Bin, Req2),
+    {ok, Req3, State}.
 
 terminate(_Reason, _Req, _State) ->
     ok.
