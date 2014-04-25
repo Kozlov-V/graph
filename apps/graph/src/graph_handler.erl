@@ -12,8 +12,10 @@ handle(Req, State) ->
     From = proplists:get_value(<<"from">>, Decoded),
     Period = proplists:get_value(<<"period">>, Decoded),
     Title = proplists:get_value(<<"title">>, Decoded, <<>>),
+    Width = proplists:get_value(<<"width">>, Decoded, 900),
+    Height = proplists:get_value(<<"height">>, Decoded, 200),
     Data = [ E || {E} <- proplists:get_value(<<"data">>, Decoded) ],
-    Bin = graph:graph(graph:default_dim(), graph:default_theme(), From, Period, Title, Data),
+    Bin = graph:graph(graph:dim(Width, Height), graph:default_theme(), From, Period, Title, Data),
     {ok, Req3} = cowboy_req:reply(200, [{<<"content-type">>, <<"image/png">>}], Bin, Req2),
     {ok, Req3, State}.
 

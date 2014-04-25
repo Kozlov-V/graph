@@ -12,12 +12,12 @@
 -define(HEIGHT, (Dim(shiftY) + Dim(sizeY) + Dim(legendOffsetY))).
 -define(BINARY, [<<"B">>, <<"Bps">>]).
 
-default_dim() ->
+dim(Width, Height) ->
     List = [
-        {sizeX, 1296},
+        {sizeX, Width},
         {shiftXleft, 85},
         {shiftXright, 30},
-        {sizeY, 200},
+        {sizeY, Height},
         {shiftY, 36},
         {gridPixels, 25},
         {gridPixelsVert, 40},
