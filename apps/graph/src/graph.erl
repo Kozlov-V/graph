@@ -61,7 +61,7 @@ get_palette({Gd, Index}, Colors) ->
     L = [ begin {ok, C} = gd:image_color_allocate(Gd, Index, R, G, B), {T, C} end || {T, {R, G, B}} <- Colors],
     fun(C) -> proplists:get_value(C, L) end.
 
-graph(Dim, Theme, From, Period, Data) ->
+graph(Dim, Theme, From, Period, Title, Data) ->
     ok = erl_ddll:load_driver("deps/elib_gd/priv/", "elib_gd_drv"),
 
     {ok, Gd} = gd:new(),
@@ -76,7 +76,7 @@ graph(Dim, Theme, From, Period, Data) ->
     Fontpath = Cwd ++ "/DejaVuSans.ttf",
 
     draw_rectangle(G, Dim, Palette),
-    draw_header(G, Dim, Palette, Fontpath, "mylogin : simple graph"),
+    draw_header(G, Dim, Palette, Fontpath, binary_to_list(Title)),
     draw_work_period(G, Dim, Palette),
     draw_time_grid(G, Dim, Palette, Fontpath, From, Period),
     draw_x_axis(G, Dim, Palette),
