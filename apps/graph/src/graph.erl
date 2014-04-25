@@ -24,6 +24,27 @@ default_dim() ->
         {legendOffsetY, 90}],
     fun(P) -> proplists:get_value(P, List) end.
 
+standard_colors() ->
+    [
+        {<<"aqua">>, {16#00, 16#FF, 16#FF}},
+        {<<"black">>, {16#00, 16#00, 16#00}},
+        {<<"blue">>, {16#00, 16#00, 16#FF}},
+        {<<"fuchsia">>, {16#FF, 16#00, 16#FF}},
+        {<<"gray">>, {16#80, 16#80, 16#80}},
+        {<<"green">>, {16#00, 16#80, 16#00}},
+        {<<"lime">>, {16#00, 16#FF, 16#00}},
+        {<<"maroon">>, {16#80, 16#00, 16#00}},
+        {<<"navy">>, {16#00, 16#00, 16#80}},
+        {<<"olive">>, {16#80, 16#80, 16#00}},
+        {<<"orange">>, {16#FF, 16#A5, 16#00}},
+        {<<"purple">>, {16#80, 16#00, 16#80}},
+        {<<"red">>, {16#FF, 16#00, 16#00}},
+        {<<"silver">>, {16#C0, 16#C0, 16#C0}},
+        {<<"teal">>, {16#00, 16#80, 16#80}},
+        {<<"white">>, {16#FF, 16#FF, 16#FF}},
+        {<<"yellow">>, {16#FF, 16#FF, 16#00}}
+    ].
+
 default_theme() ->
     [
         {background, {16#33, 16#33, 16#33}},
@@ -33,10 +54,8 @@ default_theme() ->
         {grid, {16#22, 16#22, 16#22}},
         {highlight, {16#FF, 16#55, 16#00}},
         {maingrid, {16#4F, 16#4F, 16#4F}},
-        {text, {16#DF, 16#DF, 16#DF}},
-        {white, {16#FF, 16#FF, 16#FF}},
-        {<<"green">>, {16#00, 16#FF, 16#00}}
-    ].
+        {text, {16#DF, 16#DF, 16#DF}}
+    ] ++ standard_colors().
 
 get_palette({Gd, Index}, Colors) ->
     L = [ begin {ok, C} = gd:image_color_allocate(Gd, Index, R, G, B), {T, C} end || {T, {R, G, B}} <- Colors],
@@ -140,7 +159,7 @@ draw_x_axis({Gd, Index}, Dim, Palette) ->
     Xright = trunc(Dim(shiftXleft) + Dim(sizeX) + 5),
     Y = Dim(sizeY) + Dim(shiftY) + 1,
     gd:image_line(Gd, Index, Xleft, Y, Xright, Y, Palette(gridborder)),
-    gd:image_filled_polygon(Gd, Index, [{Xright, Y-3}, {Xright, Y+3}, {Xright+5, Y}], Palette(white)),
+    gd:image_filled_polygon(Gd, Index, [{Xright, Y-3}, {Xright, Y+3}, {Xright+5, Y}], Palette(<<"white">>)),
     gd:image_line(Gd, Index, Xright, Y-3, Xright, Y+3, Palette(gridborder)),
     gd:image_line(Gd, Index, Xright, Y+3, Xright+5, Y, Palette(gridborder)),
     gd:image_line(Gd, Index, Xright+5, Y, Xright, Y-3, Palette(gridborder)).
@@ -150,7 +169,7 @@ draw_y_axis({Gd, Index}, Dim, Palette) ->
     Ytop = trunc(Dim(shiftY) - 5),
     Ybot = trunc(Dim(shiftY) + Dim(sizeY) + 4),
     gd:image_line(Gd, Index, X, Ytop, X, Ybot, Palette(gridborder)),
-    gd:image_filled_polygon(Gd, Index, [{X-3, Ytop}, {X+3, Ytop}, {X, Ytop-5}], Palette(white)),
+    gd:image_filled_polygon(Gd, Index, [{X-3, Ytop}, {X+3, Ytop}, {X, Ytop-5}], Palette(<<"white">>)),
     gd:image_line(Gd, Index, X-3, Ytop, X+3, Ytop, Palette(gridborder)),
     gd:image_line(Gd, Index, X-3, Ytop, X, Ytop-5, Palette(gridborder)),
     gd:image_line(Gd, Index, X+3, Ytop, X, Ytop-5, Palette(gridborder)).
