@@ -75,7 +75,7 @@ graph(Dim, Theme, From, Period, Title, Data) ->
     {ok, Cwd} = file:get_cwd(),
     Fontpath = Cwd ++ "/DejaVuSans.ttf",
 
-    draw_rectangle(G, Dim, Palette),
+    draw_rectangle(G, Palette, ?WIDTH, ?HEIGHT),
     draw_header(G, Dim, Palette, Fontpath, binary_to_list(Title)),
     draw_work_period(G, Dim, Palette),
     draw_time_grid(G, Dim, Palette, Fontpath, From, Period),
@@ -90,16 +90,62 @@ graph(Dim, Theme, From, Period, Title, Data) ->
 
     draw_charts(G, Dim, Palette, From, Period, Min, Max, Data),
 
-    {ok, Binary} = gd:image_png_ptr(Gd, Index),
+    {Hs, Table} = calc_legend(Gd, Dim, Data, Type, Fontpath),
+
+    {ok, Index2} = gd:image_create_true_color(Gd, ?WIDTH, ?HEIGHT + Hs*length(Table)),
+    ok = draw_rectangle({Gd, Index2}, Palette, ?WIDTH, ?HEIGHT + Hs*length(Table)),
+    ok = gd:image_copy_resized(Gd, Index2, Index, 0, 0, 0, 0, ?WIDTH, ?HEIGHT, ?WIDTH, ?HEIGHT),
+    Font = gd_font:factory(Fontpath, 9),
+    [ [ begin
+        gd:image_string_ft(Gd, Index2, Palette(text), Font, 0, Sx - W, Sy - H, Str)
+    end || {Str, W, H, Sx, Sy} <- Rows ] || Rows <- Table ],
+
+    {ok, Binary} = gd:image_png_ptr(Gd, Index2),
     gd:stop(Gd),
     Binary.
+
+calc_legend(Gd, Dim, Data, Type, Fontpath) ->
+    Font = gd_font:factory(Fontpath, 9),
+    F = fun(E) ->
+        D = proplists:get_value(<<"data">>, E),
+        U = binary_to_list(proplists:get_value(<<"units">>, E, <<>>)),
+        Name = binary_to_list(proplists:get_value(<<"name">>, E, <<>>)),
+
+        Ys = [ Y || [_,Y] <- D ],
+        Last = lists:last(Ys),
+        Min = lists:min(Ys),
+        Avg = lists:sum(Ys) / length(Ys),
+        Max = lists:max(Ys),
+
+        [LastS, MinS, AvgS, MaxS] = [ convert_units(V, U, no_units, Type, undefined, undefined) || V <- [Last, Min, Avg, Max] ],
+        [ begin {ok, W, H} = gd:text_size(Gd, Font, S, 0), {S, W, H} end || S <- [Name, LastS, MinS, AvgS, MaxS] ]
+    end,
+    D = [ F(E) || E <- Data ],
+
+    TW = length(hd(D)),
+    TH = length(D),
+    T = fun(R,C) -> lists:nth(C, lists:nth(R, D)) end,
+    ColumnsWidth = [ lists:max([ begin {_,W,_} = T(R,C), W end || R <- lists:seq(1, TH) ]) || C <- lists:seq(1, TW) ],
+    RowsHeight = 14,
+
+    {_, Ss} = lists:foldl(fun(X, {S,Acc}) -> {X+S+40,[X+S|Acc]} end, {0,[]}, ColumnsWidth),
+    Shifts = lists:reverse(Ss),
+    
+    R = [ [ begin
+            {S, W, H} = T(R, C),
+            ShiftX = lists:nth(C, Shifts) + Dim(shiftXleft) + 10,
+            ShiftY = R * RowsHeight + ?HEIGHT,
+            {S, W, H, ShiftX, ShiftY}
+        end || C <- lists:seq(1, TW) ] || R <- lists:seq(1, TH) ],
+    {RowsHeight, R}.
+
 
 draw_charts(G, Dim, Palette, From, Period, Min, Max, Data) ->
     [ draw_chart(G, Dim, Palette, From, Period, Min, Max, proplists:get_value(<<"data">>, E), proplists:get_value(<<"color">>, E)) || E <- Data ].
 
-draw_rectangle({Gd, Index}, Dim, Palette) ->
-    ok = gd:image_filled_rectangle(Gd, Index, 0, 0, ?WIDTH, ?HEIGHT, Palette(background)),
-    ok = gd:image_rectangle(Gd, Index, 0, 0, ?WIDTH - 1, ?HEIGHT - 1, Palette(graphborder)).
+draw_rectangle({Gd, Index}, Palette, Width, Height) ->
+    ok = gd:image_filled_rectangle(Gd, Index, 0, 0, Width, Height, Palette(background)),
+    ok = gd:image_rectangle(Gd, Index, 0, 0, Width - 1, Height - 1, Palette(graphborder)).
 
 draw_header({Gd, Index}, Dim, Palette, FontPath, Text) ->
     PossibleFonts = [ gd_font:factory(FontPath, FontSize) || FontSize <- ?FONT_SIZES ],
