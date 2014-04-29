@@ -90,26 +90,53 @@ graph(Dim, Theme, From, Period, Title, Data) ->
 
     draw_charts(G, Dim, Palette, From, Period, Min, Max, Data),
 
-    {Hs, Table} = calc_legend(Gd, Dim, Data, Type, Fontpath),
-
-    {ok, Index2} = gd:image_create_true_color(Gd, ?WIDTH, ?HEIGHT + Hs*length(Table)),
-    ok = draw_rectangle({Gd, Index2}, Palette, ?WIDTH, ?HEIGHT + Hs*length(Table)),
-    ok = gd:image_copy_resized(Gd, Index2, Index, 0, 0, 0, 0, ?WIDTH, ?HEIGHT, ?WIDTH, ?HEIGHT),
-    Font = gd_font:factory(Fontpath, 9),
-    [ [ begin
-        gd:image_string_ft(Gd, Index2, Palette(text), Font, 0, Sx - W, Sy - H, Str)
-    end || {Str, W, H, Sx, Sy} <- Rows ] || Rows <- Table ],
+    Legend = calc_legend(Gd, Data, Type, Fontpath),
+    Index2 = draw_legend(G, Dim, Palette, Legend),
 
     {ok, Binary} = gd:image_png_ptr(Gd, Index2),
     gd:stop(Gd),
     Binary.
 
-calc_legend(Gd, Dim, Data, Type, Fontpath) ->
+-record(cell, {text="", align=right, addition=20, text_width, width, shiftX, shiftY, font, color}).
+
+draw_legend({Gd, Index}, Dim, Palette, Legend) ->
+    CellN1 = hd(lists:last(Legend)),
+
+    {ok, Index2} = gd:image_create_true_color(Gd, ?WIDTH, ?HEIGHT + CellN1#cell.shiftY + 20),
+    ok = draw_rectangle({Gd, Index2}, Palette, ?WIDTH, ?HEIGHT + CellN1#cell.shiftY + 20),
+    ok = gd:image_copy_resized(Gd, Index2, Index, 0, 0, 0, 0, ?WIDTH-1, ?HEIGHT-1, ?WIDTH-1, ?HEIGHT-1),
+
+    Names = [ hd(Row) || Row <- tl(Legend) ],
+    [ begin
+        Color = Cell#cell.color,
+        Sy = ?HEIGHT + Cell#cell.shiftY,
+        Sx = Dim(shiftXleft) - 10,
+        gd:image_filled_rectangle(Gd, Index2, Sx-10, Sy-10, Sx, Sy, Palette(Color)),
+        gd:image_rectangle(Gd, Index2, Sx-10, Sy-10, Sx, Sy, Palette(<<"black">>))
+    end || Cell <- Names ],
+
+    [ [ begin
+        Sx = if 
+            Cell#cell.align == left ->
+                Cell#cell.shiftX;
+            Cell#cell.align == right ->
+                Cell#cell.shiftX + Cell#cell.width - Cell#cell.text_width;
+            Cell#cell.align == center ->
+                Cell#cell.shiftX + round((Cell#cell.width - Cell#cell.text_width)/2)
+            end,
+        gd:image_string_ft(Gd, Index2, Palette(text), Cell#cell.font, 0, Sx+Dim(shiftXleft), ?HEIGHT+Cell#cell.shiftY, Cell#cell.text)
+    end || Cell <- Row ] || Row <- Legend ],
+    Index2.
+
+calc_legend(Gd, Data, Type, Fontpath) ->
     Font = gd_font:factory(Fontpath, 9),
+
+    Head = [#cell{ addition=40 }, #cell{ text="last" }, #cell{ text="min" }, #cell{ text="avg" }, #cell{ text="max" }],
     F = fun(E) ->
         D = proplists:get_value(<<"data">>, E),
         U = binary_to_list(proplists:get_value(<<"units">>, E, <<>>)),
         Name = binary_to_list(proplists:get_value(<<"name">>, E, <<>>)),
+        Color = proplists:get_value(<<"color">>, E),
 
         Ys = [ Y || [_,Y] <- D ],
         Last = lists:last(Ys),
@@ -118,26 +145,32 @@ calc_legend(Gd, Dim, Data, Type, Fontpath) ->
         Max = lists:max(Ys),
 
         [LastS, MinS, AvgS, MaxS] = [ convert_units(V, U, no_units, Type, undefined, undefined) || V <- [Last, Min, Avg, Max] ],
-        [ begin {ok, W, H} = gd:text_size(Gd, Font, S, 0), {S, W, H} end || S <- [Name, LastS, MinS, AvgS, MaxS] ]
+        [ #cell{ text=Name, align=left, color=Color }, #cell{ text=LastS }, #cell{ text=MinS }, #cell{ text=AvgS }, #cell{ text=MaxS } ]
     end,
-    D = [ F(E) || E <- Data ],
+    Table = [Head] ++ [ F(E) || E <- Data ],
 
-    TW = length(hd(D)),
-    TH = length(D),
-    T = fun(R,C) -> lists:nth(C, lists:nth(R, D)) end,
-    ColumnsWidth = [ lists:max([ begin {_,W,_} = T(R,C), W end || R <- lists:seq(1, TH) ]) || C <- lists:seq(1, TW) ],
+    Table2 = [ [ begin
+            {ok, W, _} = gd:text_size(Gd, Font, Cell#cell.text, 0),
+            Cell#cell{ text_width=W, font=Font, width=W+Cell#cell.addition }
+        end || Cell <- Row ] || Row <- Table ],
+
+    G = fun(R,C,T) -> lists:nth(C, lists:nth(R, T)) end,
+
+    TableWidth = length(hd(Table)),
+    TableHeight = length(Table),
+
+    ColumnsWidth = [ lists:max([ begin #cell{ width=W } = G(R,C,Table2), W end || R <- lists:seq(1, TableHeight) ]) 
+        || C <- lists:seq(1, TableWidth) ],
+    ColumnMax = lists:max(tl(ColumnsWidth)),
     RowsHeight = 14,
 
-    {_, Ss} = lists:foldl(fun(X, {S,Acc}) -> {X+S+40,[X+S|Acc]} end, {0,[]}, ColumnsWidth),
+    {_, Ss} = lists:foldl(fun(X, {S,Acc}) -> {X+S,[S|Acc]} end, {0,[]}, [ hd(ColumnsWidth) | lists:duplicate(length(ColumnsWidth)-1, ColumnMax)] ),
     Shifts = lists:reverse(Ss),
     
-    R = [ [ begin
-            {S, W, H} = T(R, C),
-            ShiftX = lists:nth(C, Shifts) + Dim(shiftXleft) + 10,
-            ShiftY = R * RowsHeight + ?HEIGHT,
-            {S, W, H, ShiftX, ShiftY}
-        end || C <- lists:seq(1, TW) ] || R <- lists:seq(1, TH) ],
-    {RowsHeight, R}.
+    [ [ begin
+            Cell = G(R,C,Table2),
+            Cell#cell{ width=ColumnMax, shiftX = lists:nth(C, Shifts), shiftY = R*RowsHeight }
+        end || C <- lists:seq(1, TableWidth) ] || R <- lists:seq(1, TableHeight) ].
 
 
 draw_charts(G, Dim, Palette, From, Period, Min, Max, Data) ->
