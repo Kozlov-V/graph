@@ -17,6 +17,7 @@ start(_StartType, _StartArgs) ->
     ok = application:start(ranch),
     ok = application:start(cowlib),
     ok = application:start(cowboy),
+    ok = erl_ddll:load_driver("deps/elib_gd/priv/", "elib_gd_drv"),
 
     Vroutes = [
         {<<"/graph/[...]">>, graph_handler, []}

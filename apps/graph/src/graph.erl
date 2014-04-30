@@ -62,8 +62,6 @@ get_palette({Gd, Index}, Colors) ->
     fun(C) -> proplists:get_value(C, L) end.
 
 graph(Dim, Theme, From, Period, Title, Data) ->
-    ok = erl_ddll:load_driver("deps/elib_gd/priv/", "elib_gd_drv"),
-
     {ok, Gd} = gd:new(),
     {ok, Index} = gd:image_create_true_color(Gd, ?WIDTH, ?HEIGHT),
     G = {Gd, Index},
