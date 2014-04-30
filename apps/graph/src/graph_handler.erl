@@ -8,7 +8,14 @@ init({tcp, http}, Req, _Opts) ->
 
 handle(Req, State) ->
     {ok, Body, Req2} = cowboy_req:body(Req),
-    {Decoded} = jiffy:decode(Body),
+    {ContentEncoding, Req2} = cowboy_req:header(<<"content-encoding">>, Req2),
+    Content = if 
+        ContentEncoding == <<"gzip">> ->
+            zlib:gunzip(Body);
+        true ->
+            Body
+    end,
+    {Decoded} = jiffy:decode(Content),
     From = proplists:get_value(<<"from">>, Decoded),
     Period = proplists:get_value(<<"period">>, Decoded),
     Title = proplists:get_value(<<"title">>, Decoded, <<>>),
