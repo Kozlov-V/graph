@@ -46,5 +46,7 @@ input_to_output(Req) ->
     Width = proplists:get_value(<<"width">>, Decoded, 900),
     Height = proplists:get_value(<<"height">>, Decoded, 200),
     Data = [ E || {E} <- proplists:get_value(<<"data">>, Decoded) ],
-    graph:graph(graph:dim(Width, Height), dark_orange, From, Period, Title, Data).
+    ThemeB = proplists:get_value(<<"theme">>, Decoded, <<>>),
+    Theme = list_to_atom(binary_to_list(ThemeB)),
+    graph:graph(graph:dim(Width, Height), Theme, From, Period, Title, Data).
     

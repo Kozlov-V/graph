@@ -48,6 +48,18 @@ standard_colors() ->
 default_theme() ->
     dark_orange().
 
+blue() ->
+    [
+        {background, {16#33, 16#33, 16#33}},
+        {graphborder, {16#88, 16#88, 16#88}},
+        {graph, {16#0A, 16#0A, 16#0A}},
+        {gridborder, {16#EF, 16#EF, 16#EF}},
+        {grid, {16#22, 16#22, 16#22}},
+        {highlight, {16#CC, 16#CC, 16#CC}},
+        {maingrid, {16#4F, 16#4F, 16#4F}},
+        {text, {16#00, 16#88, 16#FF}}
+    ] ++ standard_colors().
+
 dark_orange() ->
     [
         {background, {16#33, 16#33, 16#33}},
