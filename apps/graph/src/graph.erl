@@ -48,7 +48,7 @@ standard_colors() ->
 default_theme() ->
     dark_orange().
 
-blue() ->
+black_blue() ->
     [
         {background, {16#33, 16#33, 16#33}},
         {graphborder, {16#88, 16#88, 16#88}},
@@ -70,6 +70,18 @@ dark_orange() ->
         {highlight, {16#FF, 16#55, 16#00}},
         {maingrid, {16#4F, 16#4F, 16#4F}},
         {text, {16#DF, 16#DF, 16#DF}}
+    ] ++ standard_colors().
+
+blue() ->
+    [
+        {background, {16#F0, 16#F0, 16#F0}},
+        {graphborder, {16#33, 16#33, 16#33}},
+        {graph, {16#FF, 16#FF, 16#FF}},
+        {gridborder, {16#00, 16#00, 16#00}},
+        {grid, {16#CC, 16#CC, 16#CC}},
+        {highlight, {16#AA, 16#44, 16#44}},
+        {maingrid, {16#AA, 16#AA, 16#AA}},
+        {text, {16#22, 16#22, 16#22}}
     ] ++ standard_colors().
 
 get_palette({Gd, Index}, Colors) ->
