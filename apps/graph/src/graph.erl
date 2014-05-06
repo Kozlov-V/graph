@@ -135,7 +135,7 @@ draw_legend({Gd, Index}, Dim, Palette, Legend) ->
     [ begin
         Color = Cell#cell.color,
         Sy = ?HEIGHT + Cell#cell.shiftY,
-        Sx = Dim(shiftXleft) - 10,
+        Sx = 20,
         gd:image_filled_rectangle(Gd, Index2, Sx-10, Sy-10, Sx, Sy, Palette(Color)),
         gd:image_rectangle(Gd, Index2, Sx-10, Sy-10, Sx, Sy, Palette(<<"black">>))
     end || Cell <- Names ],
@@ -149,7 +149,7 @@ draw_legend({Gd, Index}, Dim, Palette, Legend) ->
             Cell#cell.align == center ->
                 Cell#cell.shiftX + round((Cell#cell.width - Cell#cell.text_width)/2)
             end,
-        gd:image_string_ft(Gd, Index2, Palette(text), Cell#cell.font, 0, Sx+Dim(shiftXleft), ?HEIGHT+Cell#cell.shiftY, Cell#cell.text)
+        gd:image_string_ft(Gd, Index2, Palette(text), Cell#cell.font, 0, Sx+30, ?HEIGHT+Cell#cell.shiftY, Cell#cell.text)
     end || Cell <- Row ] || Row <- Legend ],
     Index2.
 
