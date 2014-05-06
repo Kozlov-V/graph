@@ -46,6 +46,9 @@ standard_colors() ->
     ].
 
 default_theme() ->
+    dark_orange().
+
+dark_orange() ->
     [
         {background, {16#33, 16#33, 16#33}},
         {graphborder, {16#88, 16#88, 16#88}},

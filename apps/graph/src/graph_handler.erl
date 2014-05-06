@@ -46,5 +46,5 @@ input_to_output(Req) ->
     Width = proplists:get_value(<<"width">>, Decoded, 900),
     Height = proplists:get_value(<<"height">>, Decoded, 200),
     Data = [ E || {E} <- proplists:get_value(<<"data">>, Decoded) ],
-    graph:graph(graph:dim(Width, Height), graph:default_theme(), From, Period, Title, Data).
+    graph:graph(graph:dim(Width, Height), dark_orange, From, Period, Title, Data).
     
