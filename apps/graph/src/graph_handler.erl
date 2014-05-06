@@ -27,6 +27,9 @@ terminate(_Reason, _Req, _State) ->
     ok.
 
 input_to_output(Req) ->
+    {Mega, Sec, _} = now(),
+    Now = Mega*1000000 + Sec,
+
     {ok, Body, Req2} = cowboy_req:body(Req),
     {ContentEncoding, Req2} = cowboy_req:header(<<"content-encoding">>, Req2),
     Content = if 
@@ -36,8 +39,9 @@ input_to_output(Req) ->
             Body
     end,
     {Decoded} = jiffy:decode(Content),
-    From = proplists:get_value(<<"from">>, Decoded),
-    Period = proplists:get_value(<<"period">>, Decoded),
+
+    Period = proplists:get_value(<<"period">>, Decoded, 3600),
+    From = proplists:get_value(<<"from">>, Decoded, Now - Period),
     Title = proplists:get_value(<<"title">>, Decoded, <<>>),
     Width = proplists:get_value(<<"width">>, Decoded, 900),
     Height = proplists:get_value(<<"height">>, Decoded, 200),
