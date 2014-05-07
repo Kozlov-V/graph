@@ -18,7 +18,7 @@ handle(Req, State) ->
             {_,_,Ms} = Now,
             {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:now_to_local_time(now()),
             Filename = string:join([ integer_to_list(E) || E <- [Year, Month, Day, Hour, Min, Sec, Ms] ], "-"),
-            file:write_file("/tmp/" ++ Filename ++ ".log", term_to_binary({Exception, Reason, Req})),
+            file:write_file("/tmp/" ++ Filename ++ ".log", io_lib:fwrite("~p.", [{Exception, Reason, Req}])),
             {ok, Req3} = cowboy_req:reply(500, [], <<>>, Req),
             {ok, Req3, State}
     end.
