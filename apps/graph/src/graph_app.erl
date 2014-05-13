@@ -24,7 +24,7 @@ start(_StartType, _StartArgs) ->
     ],
     Routes = [{'_', Vroutes}],
     Dispatch = cowboy_router:compile(Routes),
-    Port = 8080,
+    {ok, Port} = application:get_env(graph, port),
     cowboy:start_http(my_http_listener, 100, 
         [{port, Port}],
         [{env, [{dispatch, Dispatch}]}]),
